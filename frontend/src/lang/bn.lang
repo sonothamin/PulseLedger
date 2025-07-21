@@ -1,0 +1,436 @@
+lang=বাংলা
+# Bangla Language File
+# Format: key=value
+
+# --- Navigation & Core ---
+hospitalAccounts=হাসপাতাল অ্যাকাউন্ট ম্যানেজমেন্ট
+dashboard=ড্যাশবোর্ড
+pos=পিওএস
+sales=বিক্রয়
+expenses=খরচ
+products=প্রোডাক্ট
+patients=রোগী
+users=ইউজার
+roles=রোল
+settings=সেটিংস
+accounts=অ্যাকাউন্ট
+audtLogs=অডিট লগ
+userManagement=ইউজার ম্যানেজমেন্ট
+roleManagement=রোল ম্যানেজমেন্ট
+logout=লগআউট
+expandSidebar=সাইডবার বাড়াও
+collapseSidebar=সাইডবার ছোট করো
+addExpense=খরচ যোগ করো
+auditLogs=অডিট লগ
+salesAgentsTitle=সেলস এজেন্ট
+
+# --- Auth & User ---
+login=লগইন
+loginTitle=লগইন
+loginError=ইউজারনেম বা পাসওয়ার্ড ভুল
+rememberMe=মনে রাখো
+forgotPassword=পাসওয়ার্ড ভুলে গেছো?
+user=ইউজার
+username=ইউজারনেম
+password=পাসওয়ার্ড
+userId=ইউজার আইডি
+userDetails=ইউজার ডিটেইলস
+fullName=পুরো নাম
+email=ইমেইল
+role=রোল
+selectRole=রোল সিলেক্ট করো
+userStatus=স্ট্যাটাস
+lastLogin=লাস্ট লগইন
+active=অ্যাকটিভ
+inactive=ইনঅ্যাকটিভ
+noRole=কোনো রোল নেই
+addNewPatient=নতুন রোগী যোগ করো
+addNewAgent=নতুন এজেন্ট যোগ করো
+
+# --- Dashboard ---
+dashboardTitle=ড্যাশবোর্ড
+totalSales=মোট বিক্রয়
+totalExpenses=মোট খরচ
+netProfit=নেট প্রফিট
+todaySales=আজকের বিক্রয়
+todayExpenses=আজকের খরচ
+recentTransactions=সাম্প্রতিক ট্রানজাকশন
+topProducts=টপ প্রোডাক্ট
+salesChart=বিক্রয় চার্ট
+expensesChart=খরচ চার্ট
+noRecentTransactions=কোনো সাম্প্রতিক ট্রানজাকশন নেই
+noProducts=কোনো প্রোডাক্ট নেই
+noProductsFound=তুমি যে প্রোডাক্ট খুঁজছো তা পাওয়া যায়নি
+quickAccess=কুইক অ্যাক্সেস
+noQuickActions=কোনো কুইক অ্যাকশন নেই
+
+# --- POS ---
+posTitle=পয়েন্ট অফ সেল
+scanBarcode=বারকোড স্ক্যান করো
+productSearch=প্রোডাক্ট সার্চ
+cart=কার্ট
+subtotal=সাবটোটাল
+tax=ট্যাক্স
+discount=ডিসকাউন্ট
+totalAmount=মোট পরিমাণ
+paymentMethod=পেমেন্ট মেথড
+cash=ক্যাশ
+card=কার্ড
+mobile=মোবাইল পেমেন্ট
+change=ফেরত
+completeSale=সেল কমপ্লিট করো
+clearCart=কার্ট ক্লিয়ার করো
+invoice=ইনভয়েস
+printInvoice=ইনভয়েস প্রিন্ট করো
+previewInvoice=ইনভয়েস প্রিভিউ
+clearCartConfirm=কার্ট ক্লিয়ার করতে চাও?
+supplementaryIncluded=সাপ্লিমেন্টারি ইনক্লুডেড
+cartEmpty=কার্ট খালি
+selectPatient=রোগী সিলেক্ট করো
+selectAgent=এজেন্ট সিলেক্ট করো
+copiesToPrint=কপি প্রিন্ট করো
+copies=কপি
+product=প্রোডাক্ট
+addToCart=কার্টে যোগ করো
+decreaseQuantity=পরিমাণ কমাও
+increaseQuantity=পরিমাণ বাড়াও
+remove=রিমুভ
+
+# --- Sales ---
+salesTitle=বিক্রয়
+newSale=নতুন সেল
+saleDate=সেলের তারিখ
+saleNumber=সেল নম্বর
+customer=কাস্টমার
+cashier=ক্যাশিয়ার
+paymentStatus=পেমেন্ট স্ট্যাটাস
+paid=পেইড
+pending=পেন্ডিং
+refunded=রিফান্ডেড
+viewDetails=ডিটেইলস দেখো
+exportSales=সেল এক্সপোর্ট করো
+salesReport=সেলস রিপোর্ট
+saleCompleted=সেল সফলভাবে কমপ্লিট!
+saleFailed=সেল কমপ্লিট করতে ব্যর্থ। আবার চেষ্টা করো।
+completedSales=কমপ্লিটেড সেলস
+totalDiscounts=মোট ডিসকাউন্ট
+editSale=সেল এডিট করো
+saveChanges=চেঞ্জ সেভ করো
+saleDetails=সেল ডিটেইলস
+items=আইটেম
+saleNotFound=সেল পাওয়া যায়নি
+saleAdded=সেল যোগ হয়েছে
+saleUpdated=সেল আপডেট হয়েছে
+saleDeleted=সেল ডিলিট হয়েছে
+saleSearchPlaceholder=নম্বর বা কাস্টমার দিয়ে সেল সার্চ করো
+collapse=কলাপ্স
+expand=এক্সপ্যান্ড
+
+# --- Expenses ---
+expensesTitle=খরচ
+newExpense=নতুন খরচ
+expenseDate=খরচের তারিখ
+expenseCategory=খরচের ক্যাটাগরি
+expenseAmount=খরচের পরিমাণ
+expenseDescription=খরচের বর্ণনা
+approvedBy=অ্যাপ্রুভড বাই
+approvalStatus=অ্যাপ্রুভাল স্ট্যাটাস
+approved=অ্যাপ্রুভড
+rejected=রিজেক্টেড
+exportExpenses=খরচ এক্সপোর্ট করো
+expensesReport=খরচ রিপোর্ট
+categoriesUsed=ব্যবহৃত ক্যাটাগরি
+averageAmount=গড় পরিমাণ
+
+# --- Products ---
+productsTitle=প্রোডাক্ট
+newProduct=নতুন প্রোডাক্ট
+productName=প্রোডাক্টের নাম
+productCode=প্রোডাক্ট কোড
+productCategory=প্রোডাক্ট ক্যাটাগরি
+productPrice=প্রোডাক্টের দাম
+productDescription=প্রোডাক্টের বর্ণনা
+inStock=ইন স্টক
+outOfStock=আউট অফ স্টক
+lowStock=লো স্টক
+stockLevel=স্টক লেভেল
+reorderLevel=রিঅর্ডার লেভেল
+supplier=সাপ্লায়ার
+costPrice=কস্ট প্রাইস
+sellingPrice=সেলিং প্রাইস
+profitMargin=প্রফিট মার্জিন
+exportProducts=প্রোডাক্ট এক্সপোর্ট করো
+noSupplementaryProductsAvailable=কোনো সাপ্লিমেন্টারি প্রোডাক্ট নেই
+productBundle=প্রোডাক্ট বান্ডল
+supplements=সাপ্লিমেন্ট
+productStatus=প্রোডাক্ট স্ট্যাটাস
+supplementaryProduct=সাপ্লিমেন্টারি প্রোডাক্ট
+addSupplementary=সাপ্লিমেন্ট যোগ করো
+removeSupplementary=সাপ্লিমেন্ট রিমুভ করো
+productActive=অ্যাকটিভ
+productInactive=ইনঅ্যাকটিভ
+productActions=প্রোডাক্ট অ্যাকশন
+productDetails=প্রোডাক্ট ডিটেইলস
+productAdded=প্রোডাক্ট যোগ হয়েছে
+productUpdated=প্রোডাক্ট আপডেট হয়েছে
+productDeleted=প্রোডাক্ট ডিলিট হয়েছে
+productNotFound=প্রোডাক্ট পাওয়া যায়নি
+productImport=প্রোডাক্ট ইমপোর্ট
+productExport=প্রোডাক্ট এক্সপোর্ট
+productSave=প্রোডাক্ট সেভ করো
+productCancel=ক্যানসেল
+productEdit=প্রোডাক্ট এডিট
+productDelete=প্রোডাক্ট ডিলিট
+productSearchPlaceholder=নাম বা ক্যাটাগরি দিয়ে প্রোডাক্ট সার্চ করো
+productFixed=ফিক্সড
+productPercent=পার্সেন্ট
+
+# --- Patients ---
+patientsTitle=রোগী ম্যানেজমেন্ট
+newPatient=নতুন রোগী
+patient=রোগী
+patientId=রোগী আইডি
+patientName=রোগীর নাম
+dateOfBirth=জন্ম তারিখ
+gender=জেন্ডার
+male=পুরুষ
+female=মহিলা
+other=অন্যান্য
+selectGender=জেন্ডার সিলেক্ট করো
+allGenders=সব জেন্ডার
+age=বয়স
+contact=যোগাযোগ
+totalPatients=মোট রোগী
+activePatients=অ্যাকটিভ রোগী
+malePatients=পুরুষ রোগী
+femalePatients=মহিলা রোগী
+exportPatients=রোগী এক্সপোর্ট করো
+
+# --- Roles ---
+rolesTitle=রোল
+newRole=নতুন রোল
+roleName=রোলের নাম
+roleDescription=রোলের বর্ণনা
+permissions=পারমিশন
+allPermissions=সব পারমিশন
+exportRoles=রোল এক্সপোর্ট করো
+editRole=রোল এডিট করো
+
+# --- Settings ---
+systemSettings=সিস্টেম সেটিংস
+localization=লোকালাইজেশন
+branding=ব্র্যান্ডিং
+currency=কারেন্সি
+saveSettings=সেটিংস সেভ করো
+settingsSaved=সেটিংস সফলভাবে সেভ হয়েছে
+settingsError=সেটিংস সেভ করতে ব্যর্থ
+settingsSavedSuccessfully=সেটিংস সফলভাবে সেভ হয়েছে
+failedToUploadLogo=লোগো আপলোড করতে ব্যর্থ
+
+# --- Theme ---
+themeMode=থিম মোড
+themeSystem=সিস্টেম ডিফল্ট
+themeLight=লাইট
+themeDark=ডার্ক
+system=সিস্টেম
+light=লাইট
+dark=ডার্ক
+
+# --- Accounts ---
+accountsTitle=অ্যাকাউন্ট ওভারভিউ
+accountsOverview=ফাইনান্সিয়াল ওভারভিউ
+accountsDailyLedger=ডেইলি লেজার
+accountsInsights=ইনসাইটস
+accountsTotalInflow=মোট ইনফ্লো
+accountsTotalOutflow=মোট আউটফ্লো
+accountsNetProfit=নেট প্রফিট
+accountsAvgDailyProfit=গড় ডেইলি প্রফিট
+accountsFinancialOverview=ফাইনান্সিয়াল ওভারভিউ
+accountsInflowVsOutflow=ইনফ্লো বনাম আউটফ্লো
+accountsDailyProfitAnalysis=ডেইলি প্রফিট অ্যানালাইসিস
+accountsPerformanceOverview=পারফরম্যান্স ওভারভিউ
+accountsBestDay=বেস্ট ডে
+accountsWorstDay=ওয়ার্স্ট ডে
+accountsAvgDailyInflow=গড় ডেইলি ইনফ্লো
+accountsAvgDailyOutflow=গড় ডেইলি আউটফ্লো
+accountsEfficiencyRatio=এফিসিয়েন্সি রেশিও
+accountsProfitMargin=প্রফিট মার্জিন
+accountsPerformanceRate=পারফরম্যান্স রেট
+accountsInflowPerOutflow=ইনফ্লো পার আউটফ্লো
+accountsNetProfitPercent=নেট প্রফিট %
+accountsProfitableDays=প্রফিটেবল ডেজ
+accountsTrendAnalysis=ট্রেন্ড অ্যানালাইসিস
+accountsFinancialMetrics=ফাইনান্সিয়াল মেট্রিক্স
+accountsAvgDailyPerformance=গড় ডেইলি পারফরম্যান্স
+accountsProfitStreak=প্রফিট স্ট্রিক
+accountsLossStreak=লস স্ট্রিক
+accountsDaysAnalyzed=ডেজ অ্যানালাইজড
+accountsProfitDays=প্রফিট ডেজ
+accountsLossDays=লস ডেজ
+accountsDateRange=ডেট রেঞ্জ
+accountsThisWeek=এই সপ্তাহ
+accountsThisMonth=এই মাস
+accountsLast7Days=লাস্ট ৭ দিন
+accountsLast30Days=লাস্ট ৩০ দিন
+accountsLast90Days=লাস্ট ৯০ দিন
+accountsLastYear=লাস্ট ইয়ার
+accountsCustomRange=কাস্টম রেঞ্জ
+accountsFrom=থেকে
+accountsTo=পর্যন্ত
+accountsToday=আজ
+accountsLoading=লোডিং...
+accountsRetry=আবার চেষ্টা করো
+accountsFailedToLoad=অ্যাকাউন্ট ডেটা লোড করতে ব্যর্থ
+allDates=সব তারিখ
+salesAgent=সেলস এজেন্ট
+allAgents=সব এজেন্ট
+allCashiers=সব ক্যাশিয়ার
+itemCount=আইটেম কাউন্ট
+
+# --- Modals & Notifications ---
+confirmDelete=ডিলিট কনফার্ম
+deleteMessage=তুমি কি এই আইটেম ডিলিট করতে চাও?
+deleteWarning=এই অ্যাকশন আনডু করা যাবে না।
+yes=হ্যাঁ
+no=না
+ok=ওকে
+success=সাকসেস
+error=এরর
+warning=ওয়ার্নিং
+info=ইনফরমেশন
+itemCreated=আইটেম সফলভাবে তৈরি
+itemUpdated=আইটেম আপডেট হয়েছে
+itemDeleted=আইটেম ডিলিট হয়েছে
+operationFailed=অপারেশন ফেইলড
+
+# --- CSV Import/Export ---
+csvImportExportInfo=সিএসভি ইমপোর্ট/এক্সপোর্ট ইনফো
+thisFeatureAllowsYouToImportOrExportProductsInCSVFormat=এই ফিচার দিয়ে তুমি সিএসভি ফরম্যাটে প্রোডাক্ট ইমপোর্ট বা এক্সপোর্ট করতে পারো।
+csvFormat=সিএসভি ফরম্যাট
+howToImport=ইমপোর্ট করার নিয়ম
+howToExport=এক্সপোর্ট করার নিয়ম
+notes=নোট
+supplementaryIDsMustReferToExistingProductIDs=সাপ্লিমেন্টারি আইডি অবশ্যই বিদ্যমান প্রোডাক্ট আইডি রেফার করবে।
+allFieldsAreCaseSensitive=সব ফিল্ড কেস-সেন্সিটিভ।
+importingWillAddNewProductsDuplicatesMayOccurIfNamesIDsOverlap=ইমপোর্ট করলে নতুন প্রোডাক্ট যোগ হবে; নাম/আইডি ওভারল্যাপ হলে ডুপ্লিকেট হতে পারে।
+import=ইমপোর্ট
+export=এক্সপোর্ট
+csvInfo=সিএসভি ইনফো
+failedToLoadProducts=প্রোডাক্ট লোড করতে ব্যর্থ
+failedToImportCSV=সিএসভি ইমপোর্ট করতে ব্যর্থ
+importingProducts=প্রোডাক্ট ইমপোর্ট হচ্ছে...
+importedProducts={total} টির মধ্যে {count} টি প্রোডাক্ট ইমপোর্ট হয়েছে।
+errorImportingProduct=প্রোডাক্ট '{product}' ইমপোর্ট করতে এরর: {error}
+
+# --- Validation & Feedback ---
+pleaseFillInAllRequiredFields=সব রিকোয়ার্ড ফিল্ড পূরণ করো
+passwordRequiredForNewUsers=নতুন ইউজারের জন্য পাসওয়ার্ড লাগবে
+userUpdated=ইউজার আপডেট হয়েছে
+userAdded=ইউজার যোগ হয়েছে
+userDeleted=ইউজার ডিলিট হয়েছে
+failedToSaveUser=ইউজার সেভ করতে ব্যর্থ
+
+# --- Common Actions ---
+actions=অ্যাকশন
+delete=ডিলিট
+edit=এডিট
+filter=ফিল্টার
+search=সার্চ
+searchPatient=রোগী সার্চ
+allStatuses=সব স্ট্যাটাস
+allRoles=সব রোল
+
+# --- Auth & User ---
+phone=ফোন
+address=ঠিকানা
+
+# --- Localization & Settings ---
+language=ভাষা
+english=ইংরেজি
+dateFormat=ডেট ফরম্যাট
+startOfWeek=সপ্তাহের শুরু
+friday=শুক্রবার
+saturday=শনিবার
+startOfWeekDescription=ক্যালেন্ডার এবং রিপোর্টের জন্য সপ্তাহের প্রথম দিন
+
+# --- Branding ---
+hospitalLogo=হাসপাতালের লোগো
+
+# --- Currency ---
+beforeAmount=পরিমাণের আগে (১০০৳)
+afterAmount=পরিমাণের পরে (১০০৳)
+
+# --- New Language Key ---
+today=আজ
+systemTime=সিস্টেম টাইম
+sunday=রবিবার
+monday=সোমবার
+tuesday=মঙ্গলবার
+wednesday=বুধবার
+thursday=বৃহস্পতিবার
+friday=শুক্রবার
+saturday=শনিবার
+selectTimezone=টাইমজোন সিলেক্ট করো
+timezoneHelp=সঠিক তারিখ এবং সময় প্রদর্শনের জন্য তোমার লোকাল টাইমজোন বেছে নাও।
+cancel=বাতিল করুন
+localizationHelp=ভাষা, তারিখ ফরম্যাট এবং লোকালাইজেশন সেটিংস কনফিগার করুন
+primaryLanguageHelp=অ্যাপ্লিকেশনের প্রধান ভাষা
+dateFormatHelp=সব ডিসপ্লে ও রিপোর্টের জন্য তারিখের ফরম্যাট
+startOfWeekDescription=ক্যালেন্ডার এবং রিপোর্টের জন্য সপ্তাহের প্রথম দিন
+currencyHelp=সমস্ত আর্থিক ডেটার জন্য মুদ্রা প্রদর্শন সেটিংস কনফিগার করুন
+currencyConfig=কারেন্সি কনফিগারেশন
+currencySymbolHelp=মুদ্রার প্রতীক (যেমন $, €, ৳)
+currencyCodeHelp=ISO মুদ্রা কোড (যেমন USD, EUR, BDT)
+currencyNameHelp=সম্পূর্ণ মুদ্রার নাম
+currencyPositionHelp=পরিমাণের পরে/আগে প্রতীকের অবস্থান
+brandingHelp=আপনার হাসপাতালের ভিজ্যুয়াল আইডেন্টিটি ও যোগাযোগ তথ্য কাস্টমাইজ করুন
+uploadLogoHelp=আপনার হাসপাতালের লোগো আপলোড করুন (PNG, JPG, সর্বোচ্চ ২MB)
+logoReadyToUpload=লোগো আপলোডের জন্য প্রস্তুত
+logoUploaded=লোগো সফলভাবে আপলোড হয়েছে
+logoSavePrompt=লোগো প্রয়োগ করতে 'সেভ সেটিংস' ক্লিক করুন
+logoAppearHelp=আপনার লোগো ইনভয়েস, রিপোর্ট ও অন্যান্য ডকুমেন্টে দেখা যাবে
+hospitalInfo=হাসপাতালের তথ্য
+hospitalNameHelp=এই নামটি সব ডকুমেন্ট ও রিপোর্টে দেখা যাবে
+taglineHelp=আপনার হাসপাতালের জন্য সংক্ষিপ্ত স্লোগান বা মটো
+addressHelp=পূর্ণ ঠিকানা (রাস্তা, শহর, পোস্টাল কোড সহ)
+contactHelp=হাসপাতালের প্রধান যোগাযোগ নম্বর
+emailHelp=হাসপাতালের প্রধান ইমেইল ঠিকানা
+facebookHelp=ফেসবুক আইডি বা ইউজারনেম (যেমন sonothamin.112)
+websiteHelp=হাসপাতালের অফিসিয়াল ওয়েবসাইট URL
+enterFacebookId=ফেসবুক আইডি লিখুন (যেমন sonothamin.112)
+enterWebsiteUrl=ওয়েবসাইট URL লিখুন
+showInactive=নিষ্ক্রিয় দেখান
+hideInactive=নিষ্ক্রিয় লুকান
+
+# --- Page Titles ---
+pageSettings=সেটিংস
+pageUsers=ইউজার
+pagePOS=পয়েন্ট অফ সেল
+pageSales=বিক্রয়
+pageRoles=রোল
+pageProducts=প্রোডাক্ট
+pageExpenses=খরচ
+pageAccounts=অ্যাকাউন্ট
+pageDashboard=ড্যাশবোর্ড
+pageAuditLogs=অডিট লগ
+pagePatients=রোগী
+pageSalesAgents=সেলস এজেন্ট
+newAgent=নতুন এজেন্ট
+agentPerformance=এজেন্ট পারফরম্যান্স
+totalAgents=মোট এজেন্ট
+activeAgents=সক্রিয় এজেন্ট
+total=মোট
+inactiveAgents=নিষ্ক্রিয় এজেন্ট
+name=নাম
+sales=বিক্রয়
+total=মোট
+performance=পারফরম্যান্স
+status=অবস্থা
+actions=অ্যাকশন
+amount=পরিমাণ
+category=বিভাগ
+selectCategory=বিভাগ নির্বাচন করুন
+recipient=প্রাপক
+description=বর্ণনা
+save=সংরক্ষণ করুন
+printAndSave=প্রিন্ট এবং সংরক্ষণ করুন

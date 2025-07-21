@@ -1,0 +1,433 @@
+lang=English
+# English Language File
+# Format: key=value
+
+# --- Navigation & Core ---
+hospitalAccounts=Hospital Accounts Management
+dashboard=Dashboard
+pos=POS
+sales=Sales
+expenses=Expenses
+products=Products
+patients=Patients
+users=Users
+roles=Roles
+settings=Settings
+accounts=Accounts
+userManagement=User Management
+roleManagement=Role Management
+logout=Logout
+expandSidebar=Expand sidebar
+collapseSidebar=Collapse sidebar
+addExpense=Add Expense
+auditLogs=Audit Logs
+salesAgentsTitle=Sales Agents
+
+# --- Auth & User ---
+login=Login
+loginTitle=Login
+loginError=Invalid username or password
+rememberMe=Remember Me
+forgotPassword=Forgot Password?
+user=User
+username=Username
+password=Password
+userId=User ID
+userDetails=User Details
+fullName=Full Name
+email=Email
+role=Role
+selectRole=Select Role
+userStatus=Status
+lastLogin=Last Login
+active=Active
+inactive=Inactive
+noRole=No Role
+addNewPatient=Add new patient
+addNewAgent=Add new agent
+
+# --- Dashboard ---
+dashboardTitle=Dashboard
+totalSales=Total Sales
+totalExpenses=Total Expenses
+netProfit=Net Profit
+todaySales=Today's Sales
+todayExpenses=Today's Expenses
+recentTransactions=Recent Transactions
+topProducts=Top Products
+salesChart=Sales Chart
+expensesChart=Expenses Chart
+noRecentTransactions=No recent transactions
+noProducts=No products available
+noProductsFound=No products found matching your search
+quickAccess=Quick Access
+noQuickActions=No quick actions available
+
+# --- POS ---
+posTitle=Point of Sale
+productSearch=Search Products
+cart=Cart
+subtotal=Subtotal
+tax=Tax
+discount=Discount
+totalAmount=Total Amount
+paymentMethod=Payment Method
+cash=Cash
+card=Card
+mobile=Mobile Payment
+change=Change
+completeSale=Complete Sale
+clearCart=Clear Cart
+invoice=Invoice
+printInvoice=Print Invoice
+previewInvoice=Preview Invoice
+clearCartConfirm=Are you sure you want to clear the cart
+supplementaryIncluded=Supplements included
+cartEmpty=Cart is empty
+selectPatient=Select Patient
+selectAgent=Select Agent
+copiesToPrint=Copies to print
+copies=copies
+product=Product
+addToCart=Add to Cart
+decreaseQuantity=Decrease quantity
+increaseQuantity=Increase quantity
+remove=Remove
+
+# --- Sales ---
+salesTitle=Sales
+newSale=New Sale
+saleDate=Sale Date
+saleNumber=Sale Number
+customer=Customer
+cashier=Cashier
+paymentStatus=Payment Status
+paid=Paid
+pending=Pending
+refunded=Refunded
+viewDetails=View Details
+exportSales=Export Sales
+salesReport=Sales Report
+saleCompleted=Sale completed successfully!
+saleFailed=Failed to complete sale. Please try again.
+completedSales=Completed Sales
+totalDiscounts=Total Discounts
+editSale=Edit Sale
+saveChanges=Save Changes
+saleDetails=Sale Details
+items=Items
+saleNotFound=Sale not found
+saleAdded=Sale added
+saleUpdated=Sale updated
+saleDeleted=Sale deleted
+saleSearchPlaceholder=Search sales by number or customer
+collapse=Collapse
+expand=Expand
+
+# --- Expenses ---
+expensesTitle=Expenses
+newExpense=New Expense
+expenseDate=Expense Date
+expenseCategory=Expense Category
+expenseAmount=Expense Amount
+expenseDescription=Expense Description
+approvedBy=Approved By
+approvalStatus=Approval Status
+approved=Approved
+rejected=Rejected
+exportExpenses=Export Expenses
+expensesReport=Expenses Report
+categoriesUsed=Categories Used
+averageAmount=Average Amount
+amount=Amount
+category=Category
+selectCategory=Select Category
+recipient=Recipient
+description=Description
+save=Save
+printAndSave=Print and Save
+
+# --- Products ---
+productsTitle=Products
+newProduct=New Product
+productName=Product Name
+productCode=Product Code
+productCategory=Product Category
+productPrice=Product Price
+productDescription=Product Description
+inStock=In Stock
+outOfStock=Out of Stock
+lowStock=Low Stock
+stockLevel=Stock Level
+reorderLevel=Reorder Level
+supplier=Supplier
+costPrice=Cost Price
+sellingPrice=Selling Price
+profitMargin=Profit Margin
+exportProducts=Export Products
+noSupplementaryProductsAvailable=No supplementary products available
+productBundle=Product Bundle
+supplements=Supplements
+productStatus=Product Status
+supplementaryProduct=Supplementary Product
+addSupplementary=Add Supplementary
+removeSupplementary=Remove Supplementary
+productActive=Active
+productInactive=Inactive
+productActions=Product Actions
+productDetails=Product Details
+productAdded=Product added
+productUpdated=Product updated
+productDeleted=Product deleted
+productNotFound=Product not found
+productImport=Import Products
+productExport=Export Products
+productSave=Save Product
+productCancel=Cancel
+productEdit=Edit Product
+productDelete=Delete Product
+productSearchPlaceholder=Search products by name or category
+productFixed=Fixed
+productPercent=Percent
+
+# --- Patients ---
+patientsTitle=Patients Management
+newPatient=New Patient
+patient=Patient
+patientId=Patient ID
+patientName=Patient Name
+dateOfBirth=Date of Birth
+gender=Gender
+male=Male
+female=Female
+other=Other
+selectGender=Select Gender
+allGenders=All Genders
+age=Age
+contact=Contact
+totalPatients=Total Patients
+activePatients=Active Patients
+malePatients=Male Patients
+femalePatients=Female Patients
+exportPatients=Export Patients
+
+# --- Roles ---
+rolesTitle=Roles
+newRole=New Role
+roleName=Role Name
+roleDescription=Role Description
+permissions=Permissions
+allPermissions=All Permissions
+exportRoles=Export Roles
+editRole=Edit Role
+
+# --- Settings ---
+systemSettings=System Settings
+localization=Localization
+branding=Branding
+currency=Currency
+saveSettings=Save Settings
+settingsSaved=Settings saved successfully
+settingsError=Failed to save settings
+settingsSavedSuccessfully=Settings saved successfully
+failedToUploadLogo=Failed to upload logo
+localizationHelp=Configure language, date formats, and localization settings
+primaryLanguageHelp=Primary language for the application interface
+dateFormatHelp=Date format for all displays and reports
+startOfWeekDescription=First day of the week for calendars and reports
+currencyHelp=Configure currency display settings for all financial data
+currencyConfig=Currency Configuration
+currencySymbolHelp=Currency symbol (e.g., $, €, ৳)
+currencyCodeHelp=ISO currency code (e.g., USD, EUR, BDT)
+currencyNameHelp=Full currency name
+currencyPositionHelp=Symbol position relative to amount
+brandingHelp=Customize your hospital's visual identity and contact information
+uploadLogoHelp=Upload your hospital logo (PNG, JPG, max 2MB)
+logoReadyToUpload=Logo ready to upload
+logoUploaded=Logo uploaded successfully
+logoSavePrompt=Click 'Save Settings' to apply the logo
+logoAppearHelp=Your logo will appear on invoices, reports, and other documents
+hospitalInfo=Hospital Information
+hospitalNameHelp=This name will appear on all documents and reports
+taglineHelp=A short slogan or motto for your hospital
+addressHelp=Full address including street, city, and postal code
+contactHelp=Primary contact number for your hospital
+emailHelp=Primary email address for your hospital
+facebookHelp=Facebook ID or username (e.g., sonothamin.112)
+websiteHelp=Official website URL for your hospital
+enterFacebookId=Enter Facebook ID (e.g., sonothamin.112)
+enterWebsiteUrl=Enter website URL
+
+# --- Theme ---
+themeMode=Theme Mode
+themeSystem=System Default
+themeLight=Light
+themeDark=Dark
+system=System
+light=Light
+dark=Dark
+
+# --- Accounts ---
+accountsTitle=Accounts Overview
+accountsOverview=Financial Overview
+accountsDailyLedger=Daily Ledger
+accountsInsights=Insights
+accountsTotalInflow=Total Inflow
+accountsTotalOutflow=Total Outflow
+accountsNetProfit=Net Profit
+accountsAvgDailyProfit=Avg Daily Profit
+accountsFinancialOverview=Financial Overview
+accountsInflowVsOutflow=Inflow vs Outflow
+accountsDailyProfitAnalysis=Daily Profit Analysis
+accountsPerformanceOverview=Performance Overview
+accountsBestDay=Best Day
+accountsWorstDay=Worst Day
+accountsAvgDailyInflow=Avg Daily Inflow
+accountsAvgDailyOutflow=Avg Daily Outflow
+accountsEfficiencyRatio=Efficiency Ratio
+accountsProfitMargin=Profit Margin
+accountsPerformanceRate=Performance Rate
+accountsInflowPerOutflow=Inflow per Outflow
+accountsNetProfitPercent=Net Profit %
+accountsProfitableDays=Profitable Days
+accountsTrendAnalysis=Trend Analysis
+accountsFinancialMetrics=Financial Metrics
+accountsAvgDailyPerformance=Average Daily Performance
+accountsProfitStreak=Profit Streak
+accountsLossStreak=Loss Streak
+accountsDaysAnalyzed=Days Analyzed
+accountsProfitDays=Profit Days
+accountsLossDays=Loss Days
+accountsDateRange=Date Range
+accountsThisWeek=This week
+accountsThisMonth=This month
+accountsLast7Days=Last 7 days
+accountsLast30Days=Last 30 days
+accountsLast90Days=Last 90 days
+accountsLastYear=Last year
+accountsCustomRange=Custom range
+accountsFrom=from
+accountsTo=to
+accountsToday=Today
+accountsLoading=Loading...
+accountsRetry=Retry
+accountsFailedToLoad=Failed to load accounts data
+allDates=All Dates
+salesAgent=Sales Agent
+allAgents=All Agents
+allCashiers=All Cashiers
+itemCount=Item Count
+
+# --- Modals & Notifications ---
+confirmDelete=Confirm Delete
+deleteMessage=Are you sure you want to delete this item?
+deleteWarning=This action cannot be undone.
+yes=Yes
+no=No
+ok=OK
+success=Success
+error=Error
+warning=Warning
+info=Information
+itemCreated=Item created successfully
+itemUpdated=Item updated successfully
+itemDeleted=Item deleted successfully
+operationFailed=Operation failed
+
+# --- CSV Import/Export ---
+csvImportExportInfo=CSV Import/Export Info
+thisFeatureAllowsYouToImportOrExportProductsInCSVFormat=This feature allows you to import or export products in CSV format.
+csvFormat=CSV Format
+howToImport=How to Import
+howToExport=How to Export
+notes=Notes
+supplementaryIDsMustReferToExistingProductIDs=Supplementary IDs must refer to existing product IDs.
+allFieldsAreCaseSensitive=All fields are case-sensitive.
+importingWillAddNewProductsDuplicatesMayOccurIfNamesIDsOverlap=Importing will add new products; duplicates may occur if names/IDs overlap.
+import=Import
+export=Export
+csvInfo=CSV Info
+failedToLoadProducts=Failed to load products
+failedToImportCSV=Failed to import CSV
+importingProducts=Importing products...
+importedProducts=Imported {count} of {total} products.
+errorImportingProduct=Error importing product '{product}': {error}
+
+# --- Validation & Feedback ---
+pleaseFillInAllRequiredFields=Please fill in all required fields
+passwordRequiredForNewUsers=Password is required for new users
+userUpdated=User updated
+userAdded=User added
+userDeleted=User deleted
+failedToSaveUser=Failed to save user
+
+# --- Common Actions ---
+actions=Actions
+delete=Delete
+edit=Edit
+filter=Filter
+search=Search
+searchPatient=Search patient
+allStatuses=All Statuses
+allRoles=All Roles
+
+# --- Auth & User ---
+phone=Phone
+address=Address
+
+# --- Localization & Settings ---
+language=Language
+english=English
+dateFormat=Date Format
+startOfWeek=Start of Week
+friday=Friday
+saturday=Saturday
+
+# --- Branding ---
+hospitalLogo=Hospital Logo
+
+# --- Currency ---
+beforeAmount=Before amount ($100)
+afterAmount=After amount (100$)
+
+# --- New Language Key ---
+today=Today
+systemTime=System Time
+sunday=Sunday
+monday=Monday
+tuesday=Tuesday
+wednesday=Wednesday
+thursday=Thursday
+friday=Friday
+saturday=Saturday
+selectTimezone=Select Timezone
+timezoneHelp=Choose your local time zone for accurate date and time display.
+cancel=Cancel
+showInactive=Show Inactive
+hideInactive=Hide Inactive
+
+# --- Page Titles ---
+pageSettings=Settings
+pageUsers=Users
+pagePOS=Point of Sale
+pageSales=Sales
+pageRoles=Roles
+pageProducts=Products
+pageExpenses=Expenses
+pageAccounts=Accounts
+pageDashboard=Dashboard
+pageAuditLogs=Audit Logs
+pagePatients=Patients
+pageSalesAgents=Sales Agents
+newAgent=New Agent
+agentPerformance=Agent Performance
+totalAgents=Total Agents
+activeAgents=Active Agents
+total=Total
+inactiveAgents=Inactive Agents
+name=Name
+sales=Sales
+total=Total
+performance=Performance
+status=Status
+actions=Actions
