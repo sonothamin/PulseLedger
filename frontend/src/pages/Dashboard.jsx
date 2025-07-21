@@ -1,0 +1,437 @@
+import { useEffect, useState } from 'react'
+import { useTranslations } from '../hooks/useTranslations'
+import { useAuth, usePermission } from '../context/AuthContext'
+import { useCurrency } from '../hooks/useCurrency'
+import axios from 'axios'
+import { 
+  CurrencyDollar, 
+  CreditCard, 
+  ArrowUp, 
+  ArrowDown,
+  Receipt,
+  BoxSeam,
+  Clock,
+  BarChart,
+  CashStack,
+  People,
+  ShieldLock
+} from 'react-bootstrap-icons'
+import { Bar, Line } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js'
+import { useNavigate } from 'react-router-dom'
+import ExpenseForm from '../components/UI/ExpenseForm'
+import Modal from '../components/Modal.jsx'
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend)
+
+function Dashboard() {
+  const [stats, setStats] = useState({
+    totalSales: 0,
+    totalExpenses: 0,
+    todaySales: 0,
+    todayExpenses: 0
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const { t } = useTranslations()
+  const { user } = useAuth()
+  const { formatCurrency } = useCurrency()
+  const [salesReport, setSalesReport] = useState(null)
+  const [reportLoading, setReportLoading] = useState(true)
+  const [expenses, setExpenses] = useState([])
+  const navigate = useNavigate()
+  // Permission helpers
+  const hasPOS = usePermission('pos:view');
+  const hasExpense = usePermission('expenses:create');
+  const hasAccounts = usePermission('accounts:view');
+  const hasAudit = usePermission('audit:view');
+  const hasUsers = usePermission('users:view');
+  const hasRoles = usePermission('roles:view');
+  const [showExpenseModal, setShowExpenseModal] = useState(false)
+  const [expenseForm, setExpenseForm] = useState({ amount: '', categoryId: '', description: '', recipient: '' })
+  const [expenseSaving, setExpenseSaving] = useState(false)
+  const [expenseCategories, setExpenseCategories] = useState([])
+  const [expenseNewCategory, setExpenseNewCategory] = useState('')
+  const [expenseShowAddCategory, setExpenseShowAddCategory] = useState(false)
+  const [expenseToast, setExpenseToast] = useState('')
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true)
+        setError('')
+        
+        // Fetch dashboard statistics from API
+        const [salesRes, expensesRes] = await Promise.all([
+          axios.get('/api/sales/stats'),
+          axios.get('/api/expenses/stats')
+        ])
+        
+        setStats({
+          totalSales: salesRes.data.totalSales || 0,
+          totalExpenses: expensesRes.data.totalExpenses || 0,
+          todaySales: salesRes.data.todaySales || 0,
+          todayExpenses: expensesRes.data.todayExpenses || 0
+        })
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err)
+        setError('Failed to load dashboard data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [])
+
+  useEffect(() => {
+    setReportLoading(true)
+    axios.get('/api/reports/sales')
+      .then(res => setSalesReport(res.data))
+      .catch(() => setSalesReport(null))
+      .finally(() => setReportLoading(false))
+  }, [])
+
+  useEffect(() => {
+    // Fetch recent expenses
+    axios.get('/api/expenses?limit=5&sort=desc')
+      .then(res => setExpenses(res.data || []))
+      .catch(() => setExpenses([]))
+  }, [])
+
+  useEffect(() => {
+    if (!showExpenseModal) return
+    axios.get('/api/expense-categories').then(res => setExpenseCategories(res.data)).catch(() => setExpenseCategories([]))
+  }, [showExpenseModal])
+
+  const netProfit = stats.totalSales - stats.totalExpenses
+  const todayProfit = stats.todaySales - stats.todayExpenses
+
+  // Prepare chart data
+  let chartData = null
+  let chartOptions = null
+  if (salesReport && salesReport.byDate) {
+    const labels = Object.keys(salesReport.byDate)
+    const data = Object.values(salesReport.byDate)
+    chartData = {
+      labels,
+      datasets: [
+        {
+          label: t('sales'),
+          data,
+          borderColor: 'rgba(54, 162, 235, 1)',
+          backgroundColor: 'rgba(54, 162, 235, 0.1)',
+          tension: 0.3,
+          pointRadius: 3,
+          fill: true
+        }
+      ]
+    }
+    chartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        title: { display: false }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true }
+      }
+    }
+  }
+  // Prepare recent transactions (sales + expenses)
+  const recentSales = salesReport?.sales?.slice(-5).reverse() || []
+  const recentExpenses = expenses.slice(0, 5)
+  const recentTransactions = [
+    ...recentSales.map(sale => ({
+      type: 'sale',
+      id: `sale-${sale.id}`,
+      date: sale.createdAt,
+      amount: sale.total,
+      party: sale.Patient ? sale.Patient.name : 'Walk-in',
+      cashier: sale.Cashier?.name || '',
+    })),
+    ...recentExpenses.map(exp => ({
+      type: 'expense',
+      id: `expense-${exp.id}`,
+      date: exp.createdAt,
+      amount: exp.amount,
+      party: exp.recipient || exp.description || 'Expense',
+      agent: exp.Creator?.name || '',
+    }))
+  ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5)
+
+  // Add category handler
+  const handleExpenseAddCategory = async () => {
+    if (expenseNewCategory.trim() && !expenseCategories.some(c => c.name === expenseNewCategory.trim())) {
+      try {
+        const res = await axios.post('/api/expense-categories', { name: expenseNewCategory.trim() })
+        setExpenseCategories([...expenseCategories, res.data])
+        setExpenseForm(f => ({ ...f, categoryId: res.data.id }))
+        setExpenseNewCategory('')
+        setExpenseShowAddCategory(false)
+      } catch {}
+    }
+  }
+  // Expense form change
+  const handleExpenseChange = e => {
+    const { name, value } = e.target
+    setExpenseForm(f => ({ ...f, [name]: value }))
+  }
+  // Expense form submit
+  const handleExpenseSubmit = async e => {
+    e.preventDefault()
+    setExpenseSaving(true)
+    try {
+      await axios.post('/api/expenses', { ...expenseForm })
+      setExpenseToast(t('expenseAdded') || 'Expense added')
+      setShowExpenseModal(false)
+      setExpenseForm({ amount: '', categoryId: '', description: '', recipient: '' })
+    } catch {
+      setExpenseToast(t('failedToSaveExpense') || 'Failed to save expense')
+    } finally {
+      setExpenseSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center py-5">
+        <div className="spinner-border" />
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <h2 className="mb-4">
+        {user ? `Hi, ${user.name}!` : t('dashboardTitle')}
+      </h2>
+      
+      {/* Stats Cards */}
+      <div className="row g-4 mb-4">
+        <div className="col-md-3">
+          <div className="dashboard-summary-card card border-0 shadow-sm">
+            <div className="card-body">
+              <div className="d-flex align-items-center">
+                <div className="flex-shrink-0">
+                  <div className="bg-primary bg-opacity-10 p-3 rounded">
+                    <CurrencyDollar className="text-primary" size={24} />
+                  </div>
+                </div>
+                <div className="flex-grow-1 ms-3">
+                  <h6 className="text-muted mb-1">{t('totalSales')}</h6>
+                  <h4 className="mb-0">{formatCurrency(stats.totalSales)}</h4>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="col-md-3">
+          <div className="dashboard-summary-card card border-0 shadow-sm">
+            <div className="card-body">
+              <div className="d-flex align-items-center">
+                <div className="flex-shrink-0">
+                  <div className="bg-danger bg-opacity-10 p-3 rounded">
+                    <CreditCard className="text-danger" size={24} />
+                  </div>
+                </div>
+                <div className="flex-grow-1 ms-3">
+                  <h6 className="text-muted mb-1">{t('totalExpenses')}</h6>
+                  <h4 className="mb-0">{formatCurrency(stats.totalExpenses)}</h4>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="col-md-3">
+          <div className="dashboard-summary-card card border-0 shadow-sm">
+            <div className="card-body">
+              <div className="d-flex align-items-center">
+                <div className="flex-shrink-0">
+                  <div className="bg-success bg-opacity-10 p-3 rounded">
+                    <ArrowUp className="text-success" size={24} />
+                  </div>
+                </div>
+                <div className="flex-grow-1 ms-3">
+                  <h6 className="text-muted mb-1">{t('netProfit')}</h6>
+                  <h4 className="mb-0">{formatCurrency(netProfit)}</h4>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="col-md-3">
+          <div className="dashboard-summary-card card border-0 shadow-sm">
+            <div className="card-body">
+              <div className="d-flex align-items-center">
+                <div className="flex-shrink-0">
+                  <div className="bg-warning bg-opacity-10 p-3 rounded">
+                    <ArrowDown className="text-warning" size={24} />
+                  </div>
+                </div>
+                <div className="flex-grow-1 ms-3">
+                  <h6 className="text-muted mb-1">{t('todaySales')}</h6>
+                  <h4 className="mb-0">{formatCurrency(stats.todaySales)}</h4>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts, Quick Access, and Recent Activity */}
+      <div className="row g-4">
+        <div className="col-md-6 d-flex flex-column" style={{ minHeight: 370 }}>
+          <div className="dashboard-chart-card card border-0 shadow-sm flex-fill d-flex flex-column" style={{ minHeight: 370 }}>
+            <div className="card-header bg-transparent">
+              <h5 className="mb-0">{t('salesChart')}</h5>
+            </div>
+            <div className="card-body flex-fill d-flex flex-column justify-content-center">
+              {reportLoading ? (
+                <div className="d-flex align-items-center justify-content-center" style={{ height: 320, width: '100%' }}>
+                  <div className="text-center text-muted">
+                    <BarChart size={48} className="mb-3" />
+                    <p>{t('loading')}</p>
+                  </div>
+                </div>
+              ) : chartData ? (
+                <div style={{ height: 320, width: '100%' }}>
+                  <Line data={chartData} options={chartOptions} height={320} />
+                </div>
+              ) : (
+                <div className="d-flex align-items-center justify-content-center" style={{ height: 320, width: '100%' }}>
+                  <div className="text-center text-muted">
+                    <BarChart size={48} className="mb-3" />
+                    <p>{t('noData')}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3 d-flex flex-column" style={{ minHeight: 370 }}>
+          <div className="dashboard-quickaccess-card card border-0 shadow-sm flex-fill d-flex flex-column align-items-stretch justify-content-center" style={{ minHeight: 370 }}>
+            <div className="card-header bg-transparent">
+              <h5 className="mb-0">{t('quickAccess')}</h5>
+            </div>
+            <div className="card-body d-flex flex-column gap-3 align-items-stretch justify-content-center">
+              {hasPOS && (
+                <button className="btn btn-outline-success d-flex align-items-center gap-2" onClick={() => navigate('/pos')}><CashStack /> {t('pos')}</button>
+              )}
+              {hasExpense && (
+                <button className="btn btn-outline-danger d-flex align-items-center gap-2" onClick={() => setShowExpenseModal(true)}><CreditCard /> {t('addExpense')}</button>
+              )}
+              {hasAccounts && (
+                <button className="btn btn-outline-primary d-flex align-items-center gap-2" onClick={() => navigate('/accounts')}><BarChart /> {t('accounts')}</button>
+              )}
+              {hasAudit && (
+                <button className="btn btn-outline-info d-flex align-items-center gap-2" onClick={() => navigate('/audit-logs')}><Clock /> {t('auditLogs')}</button>
+              )}
+              {hasUsers && (
+                <button className="btn btn-outline-info d-flex align-items-center gap-2" onClick={() => navigate('/users')}><People /> {t('userManagement')}</button>
+              )}
+              {hasRoles && (
+                <button className="btn btn-outline-warning d-flex align-items-center gap-2" onClick={() => navigate('/roles')}><ShieldLock /> {t('roleManagement')}</button>
+              )}
+              {!(hasPOS || hasExpense || hasAccounts || hasAudit || hasUsers || hasRoles) && (
+                <div className="text-muted text-center">{t('noQuickActions')}</div>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3 d-flex flex-column" style={{ minHeight: 370 }}>
+          <div className="dashboard-activity-card card border-0 shadow-sm flex-fill d-flex flex-column" style={{ minHeight: 370 }}>
+            <div className="card-header bg-transparent">
+              <h5 className="mb-0">{t('recentTransactions')}</h5>
+            </div>
+            <div className="card-body flex-fill d-flex flex-column justify-content-center">
+              {reportLoading ? (
+                <div className="text-center text-muted">
+                  <Clock size={48} className="mb-3" />
+                  <p>{t('loading')}</p>
+                </div>
+              ) : recentTransactions.length === 0 ? (
+                <div className="text-center text-muted">
+                  <Clock size={48} className="mb-3" />
+                  <p>{t('noRecentTransactions')}</p>
+                </div>
+              ) : (
+                <ul className="list-group list-group-flush">
+                  {recentTransactions.map(tx => (
+                    <li key={tx.id} className="list-group-item d-flex justify-content-between align-items-center" style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="d-flex align-items-center gap-2">
+                          {tx.type === 'sale' ? (
+                            <Receipt className="text-primary" title="Sale" />
+                          ) : (
+                            <CreditCard className="text-danger" title="Expense" />
+                          )}
+                          <span className="fw-semibold text-truncate" style={{ maxWidth: 220 }}>{tx.party}</span>
+                        </div>
+                        {tx.type === 'sale' && tx.cashier && (
+                          <div className="text-muted ms-4" style={{ fontSize: '0.80em', marginTop: 2 }}>
+                            By: {tx.cashier}
+                          </div>
+                        )}
+                        {tx.type === 'expense' && tx.agent && (
+                          <div className="text-muted ms-4" style={{ fontSize: '0.80em', marginTop: 2 }}>
+                            By: {tx.agent}
+                          </div>
+                        )}
+                      </div>
+                      <span className={`fw-semibold ${tx.type === 'expense' ? 'text-danger' : 'text-success'}`} style={{ whiteSpace: 'nowrap', marginLeft: 8 }}>{formatCurrency(tx.amount)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Expense Modal */}
+      <Modal
+        show={showExpenseModal}
+        onClose={() => setShowExpenseModal(false)}
+        title={t('addExpense') || 'Add Expense'}
+      >
+        <ExpenseForm
+          form={expenseForm}
+          onChange={handleExpenseChange}
+          onSubmit={handleExpenseSubmit}
+          saving={expenseSaving}
+          categories={expenseCategories}
+          newCategory={expenseNewCategory}
+          setNewCategory={setExpenseNewCategory}
+          showAddCategory={expenseShowAddCategory}
+          setShowAddCategory={setExpenseShowAddCategory}
+          addCategory={handleExpenseAddCategory}
+          t={t}
+        />
+      </Modal>
+      {/* Expense Toast */}
+      {expenseToast && (
+        <div className="toast show position-fixed bottom-0 end-0 m-4" style={{ zIndex: 9999 }}>
+          <div className="toast-header"><strong className="me-auto">{t('expenses')}</strong><button type="button" className="btn-close" onClick={() => setExpenseToast('')}></button></div>
+          <div className="toast-body">{expenseToast}</div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default Dashboard 

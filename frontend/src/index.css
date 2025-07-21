@@ -1,0 +1,362 @@
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --scrollbar-thumb-light: #888;
+  --scrollbar-thumb-dark: #bbb;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+/* Remove conflicting body styles - let Bootstrap handle layout */
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+/* Remove conflicting button styles - let Bootstrap handle buttons */
+
+/* Toast animations */
+.fade-in {
+  opacity: 1;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.fade-out {
+  opacity: 0;
+  animation: fadeOut 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+@font-face {
+  font-family: 'Hind Siliguri';
+  src: url('/HindSiliguri-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:lang(bn), [lang="bn"] {
+  font-family: 'Hind Siliguri', Arial, sans-serif !important;
+}
+
+/* Custom themed scrollbars for all browsers */
+[data-bs-theme="dark"] {
+  --scrollbar-thumb: var(--scrollbar-thumb-dark);
+}
+[data-bs-theme="light"], :root:not([data-bs-theme="dark"]) {
+  --scrollbar-thumb: var(--scrollbar-thumb-light);
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, #888);
+  border-radius: 6px;
+  min-height: 24px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bs-body-bg, #f3f6fa);
+  border-radius: 6px;
+}
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb, #888) var(--bs-body-bg, #f3f6fa);
+}
+
+/* ===== CONSISTENT UI COMPONENTS ===== */
+
+/* Consistent table headers */
+.table thead th {
+  background-color: var(--bs-secondary-bg) !important;
+  color: var(--bs-body-color) !important;
+  border-bottom: 2px solid var(--bs-border-color) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  font-size: 0.875rem !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Consistent sortable headers */
+.table thead th[style*="cursor: pointer"] {
+  transition: background-color 0.15s ease-in-out !important;
+}
+
+.table thead th[style*="cursor: pointer"]:hover {
+  background-color: var(--bs-primary-bg-subtle) !important;
+}
+
+/* Consistent form controls */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--bs-primary) !important;
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25) !important;
+}
+
+/* Consistent input groups */
+.input-group-text {
+  background-color: var(--bs-secondary-bg) !important;
+  border-color: var(--bs-border-color) !important;
+  color: var(--bs-secondary-color) !important;
+}
+
+/* Consistent buttons */
+.btn {
+  font-weight: 500 !important;
+  letter-spacing: 0.025em !important;
+}
+
+.btn-sm {
+  font-size: 0.875rem !important;
+  padding: 0.375rem 0.75rem !important;
+}
+
+/* Consistent modals */
+.modal-header {
+  border-bottom: 1px solid var(--bs-border-color) !important;
+  background-color: var(--bs-secondary-bg) !important;
+}
+
+.modal-footer {
+  border-top: 1px solid var(--bs-border-color) !important;
+  background-color: var(--bs-secondary-bg) !important;
+}
+
+/* Consistent dropdowns */
+.dropdown-menu {
+  border: 1px solid var(--bs-border-color) !important;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.dropdown-item:hover {
+  background-color: var(--bs-primary-bg-subtle) !important;
+}
+
+/* Consistent badges */
+.badge {
+  font-weight: 500 !important;
+  letter-spacing: 0.025em !important;
+}
+
+/* Consistent spacing */
+.card-body {
+  padding: 1.5rem !important;
+}
+
+/* Consistent loading states */
+.spinner-border {
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+}
+
+/* Consistent alerts */
+.alert {
+  border: 1px solid transparent !important;
+  border-radius: 0.5rem !important;
+}
+
+/* Consistent pagination */
+.pagination .page-link {
+  border-color: var(--bs-border-color) !important;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: var(--bs-primary) !important;
+  border-color: var(--bs-primary) !important;
+}
+
+/* ===== DASHBOARD CARDS STYLES ===== */
+
+/* Dashboard summary card enhancements */
+.dashboard-summary-card.card {
+  box-shadow: 0 2px 5px 0 rgba(0,0,0,0.12), 0 1px 4px 0 rgba(0,0,0,0.08) !important;
+  border: 0.5px solid rgba(60, 60, 90, 0.10) !important;
+  border-radius: 1rem;
+  background: var(--bs-card-bg, #fff);
+  transition: box-shadow 0.35s ease-out, border-color 0.25s ease-out, background-color 0.25s ease-out;
+  position: relative;
+  z-index: 1;
+}
+
+/* Dashboard chart and activity cards */
+.dashboard-chart-card.card,
+.dashboard-activity-card.card {
+  box-shadow: 0 2px 5px 0 rgba(0,0,0,0.12), 0 1px 4px 0 rgba(0,0,0,0.08) !important;
+  border: 0.5px solid rgba(60, 60, 90, 0.10) !important;
+  border-radius: 1rem;
+  background: var(--bs-card-bg, #fff);
+  transition: box-shadow 0.35s ease-out, border-color 0.25s ease-out, background-color 0.25s ease-out;
+  position: relative;
+  z-index: 1;
+}
+
+/* Filter cards (search/filter sections) */
+.card.mb-4 {
+  box-shadow: 0 2px 5px 0 rgba(0,0,0,0.12), 0 1px 4px 0 rgba(0,0,0,0.08) !important;
+  border: 0.5px solid rgba(60, 60, 90, 0.10) !important;
+  border-radius: 1rem;
+  background: var(--bs-card-bg, #fff);
+  transition: box-shadow 0.35s ease-out, border-color 0.25s ease-out, background-color 0.25s ease-out;
+  position: relative;
+  z-index: 1;
+}
+
+/* Table cards (main content areas) */
+.card:not(.mb-4):not(.dashboard-summary-card):not(.dashboard-chart-card):not(.dashboard-activity-card) {
+  box-shadow: 0 2px 5px 0 rgba(0,0,0,0.12), 0 1px 4px 0 rgba(0,0,0,0.08) !important;
+  border: 0.5px solid rgba(60, 60, 90, 0.10) !important;
+  border-radius: 1rem;
+  background: var(--bs-card-bg, #fff);
+  transition: box-shadow 0.35s ease-out, border-color 0.25s ease-out, background-color 0.25s ease-out;
+  position: relative;
+  z-index: 1;
+}
+
+/* Sales page specific cards */
+.card[style*="minHeight: 60"] {
+  box-shadow: 0 2px 5px 0 rgba(0,0,0,0.12), 0 1px 4px 0 rgba(0,0,0,0.08) !important;
+  border: 0.5px solid rgba(60, 60, 90, 0.10) !important;
+  border-radius: 1rem;
+  background: var(--bs-card-bg, #fff);
+  transition: box-shadow 0.35s ease-out, border-color 0.25s ease-out, background-color 0.25s ease-out;
+  position: relative;
+  z-index: 1;
+}
+
+/* Sales agents page cards */
+.card.h-100 {
+  box-shadow: 0 2px 5px 0 rgba(0,0,0,0.12), 0 1px 4px 0 rgba(0,0,0,0.08) !important;
+  border: 0.5px solid rgba(60, 60, 90, 0.10) !important;
+  border-radius: 1rem;
+  background: var(--bs-card-bg, #fff);
+  transition: box-shadow 0.35s ease-out, border-color 0.25s ease-out, background-color 0.25s ease-out;
+  position: relative;
+  z-index: 1;
+}
+
+/* Dark theme overrides using Bootstrap's data-bs-theme attribute */
+[data-bs-theme="dark"] .dashboard-summary-card.card {
+  background: var(--bs-card-bg, #212529);
+  border-color: rgba(120, 120, 180, 0.13) !important;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.18), 0 1px 4px 0 rgba(0,0,0,0.12) !important;
+}
+
+[data-bs-theme="dark"] .dashboard-chart-card.card,
+[data-bs-theme="dark"] .dashboard-activity-card.card {
+  background: var(--bs-card-bg, #212529);
+  border-color: rgba(120, 120, 180, 0.13) !important;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.18), 0 1px 4px 0 rgba(0,0,0,0.12) !important;
+}
+
+[data-bs-theme="dark"] .card.mb-4 {
+  background: var(--bs-card-bg, #212529);
+  border-color: rgba(120, 120, 180, 0.13) !important;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.18), 0 1px 4px 0 rgba(0,0,0,0.12) !important;
+}
+
+[data-bs-theme="dark"] .card:not(.mb-4):not(.dashboard-summary-card):not(.dashboard-chart-card):not(.dashboard-activity-card) {
+  background: var(--bs-card-bg, #212529);
+  border-color: rgba(120, 120, 180, 0.13) !important;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.18), 0 1px 4px 0 rgba(0,0,0,0.12) !important;
+}
+
+[data-bs-theme="dark"] .card[style*="minHeight: 60"] {
+  background: var(--bs-card-bg, #212529);
+  border-color: rgba(120, 120, 180, 0.13) !important;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.18), 0 1px 4px 0 rgba(0,0,0,0.12) !important;
+}
+
+[data-bs-theme="dark"] .card.h-100 {
+  background: var(--bs-card-bg, #212529);
+  border-color: rgba(120, 120, 180, 0.13) !important;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.18), 0 1px 4px 0 rgba(0,0,0,0.12) !important;
+}
+
+/* Light theme overrides for consistency */
+[data-bs-theme="light"] .dashboard-summary-card.card,
+[data-bs-theme="light"] .dashboard-chart-card.card,
+[data-bs-theme="light"] .dashboard-activity-card.card,
+[data-bs-theme="light"] .card.mb-4,
+[data-bs-theme="light"] .card:not(.mb-4):not(.dashboard-summary-card):not(.dashboard-chart-card):not(.dashboard-activity-card),
+[data-bs-theme="light"] .card[style*="minHeight: 60"],
+[data-bs-theme="light"] .card.h-100 {
+  background: var(--bs-card-bg, #fff);
+  border-color: rgba(60, 60, 90, 0.10) !important;
+  box-shadow: 0 2px 5px 0 rgba(0,0,0,0.12), 0 1px 4px 0 rgba(0,0,0,0.08) !important;
+}
+
+@keyframes dashboard-glow-dark {
+  0% {
+    box-shadow: 0 2px 12px 0 rgba(0,0,0,0.18), 0 1px 4px 0 rgba(0,0,0,0.12) !important;
+  }
+  60% {
+    box-shadow:
+      0 0 40px 16px rgba(0, 255, 255, 0.06),
+      0 0 80px 32px rgba(0, 180, 255, 0.03),
+      0 1px 4px 0 rgba(0,0,0,0.13) !important;
+  }
+  100% {
+    box-shadow:
+      0 0 30px 12px rgba(0, 255, 255, 0.04),
+      0 0 60px 24px rgba(0, 180, 255, 0.02),
+      0 1px 4px 0 rgba(0,0,0,0.13) !important;
+  }
+}
+
+html {
+  font-size: 90%;
+}
