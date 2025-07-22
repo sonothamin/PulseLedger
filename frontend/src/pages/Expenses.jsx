@@ -24,6 +24,8 @@ import ExpenseVoucher from './ExpenseVoucher'
 import Modal from '../components/Modal.jsx'
 import ExpenseForm from '../components/UI/ExpenseForm'
 
+const API_BASE = import.meta.env.VITE_API_BASE;
+
 function Expenses() {
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -58,7 +60,7 @@ function Expenses() {
     setLoading(true)
     setError('')
     try {
-      const res = await axios.get('/api/expenses')
+      const res = await axios.get(`${API_BASE}/api/expenses`)
       setExpenses(res.data)
     } catch (err) {
       setError('Failed to load expenses')
@@ -69,7 +71,7 @@ function Expenses() {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get('/api/expense-categories')
+      const res = await axios.get(`${API_BASE}/api/expense-categories`)
       setCategories(res.data)
     } catch (err) {}
   }
@@ -114,11 +116,11 @@ function Expenses() {
     try {
       let savedExpenseId = editing?.id
       if (editing) {
-        await axios.put(`/api/expenses/${editing.id}`, form)
+        await axios.put(`${API_BASE}/api/expenses/${editing.id}`, form)
         setToast('Expense updated')
         savedExpenseId = editing.id
       } else {
-        const res = await axios.post('/api/expenses', { ...form, createdBy: user?.id })
+        const res = await axios.post(`${API_BASE}/api/expenses`, { ...form, createdBy: user?.id })
         setToast('Expense added')
         savedExpenseId = res.data?.id
       }
@@ -142,7 +144,7 @@ function Expenses() {
   const handleDelete = async id => {
     if (!window.confirm('Delete this expense?')) return
     try {
-      await axios.delete(`/api/expenses/${id}`)
+      await axios.delete(`${API_BASE}/api/expenses/${id}`)
       setToast('Expense deleted')
       fetchExpenses()
     } catch (err) {
@@ -564,7 +566,7 @@ function Expenses() {
           addCategory={async () => {
             if (newCategory.trim() && !categories.some(c => c.name === newCategory.trim())) {
               try {
-                const res = await axios.post('/api/expense-categories', { name: newCategory.trim() })
+                const res = await axios.post(`${API_BASE}/api/expense-categories`, { name: newCategory.trim() })
                 setCategories([...categories, res.data])
                 setForm(f => ({ ...f, categoryId: res.data.id }))
                 setNewCategory('')

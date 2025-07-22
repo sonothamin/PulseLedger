@@ -10,3 +10,13 @@ Currently, two official plugins are available:
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Environment Variables
+
+Create a `.env` file in the `frontend` directory to set environment variables for the frontend. For the backend server URL, add:
+
+```
+VITE_API_BASE=http://localhost:3000
+```
+
+Replace the URL with your backend server's address as needed.

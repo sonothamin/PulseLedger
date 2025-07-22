@@ -4,7 +4,7 @@ import { Globe, Building, CurrencyDollar, Check, Upload, X, InfoCircle, Image, C
 
 import { useTranslations } from '../hooks/useTranslations'
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 function Settings() {
   const [settings, setSettings] = useState({})
@@ -28,7 +28,7 @@ function Settings() {
   const fetchSettings = async () => {
     setLoading(true)
     try {
-      const res = await axios.get('/api/settings')
+      const res = await axios.get(`${API_BASE}/api/settings`)
       const settingsMap = {}
       res.data.forEach(setting => {
         settingsMap[setting.key] = setting
@@ -55,7 +55,7 @@ function Settings() {
     try {
       const setting = settings[key]
       if (setting) {
-        await axios.put(`/api/settings/${setting.id}`, {
+        await axios.put(`${API_BASE}/api/settings/${setting.id}`, {
           key: setting.key,
           value: value,
           description: setting.description
@@ -66,7 +66,7 @@ function Settings() {
         }))
         setToast(t('settingsSaved'))
       } else {
-        await axios.post('/api/settings', {
+        await axios.post(`${API_BASE}/api/settings`, {
           key,
           value,
           description: `${key} settings`

@@ -13,7 +13,7 @@ import { AuthProvider } from './context/AuthContext'
 axios.defaults.withCredentials = true
 
 // API base URL
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 // Initialize global logout flag
 window.isLoggingOutGlobal = false;

@@ -29,6 +29,8 @@ import React from 'react'
 import { AuthProvider } from '../context/AuthContext'
 import Modal from '../components/Modal.jsx'
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+
 // Component for Patient Selection
 const PatientSelector = ({ 
   patients, 
@@ -411,27 +413,15 @@ const CartItem = ({
 
         {/* Action Controls */}
         <div className="d-flex align-items-center gap-1">
-          <div className="btn-group btn-group-sm" role="group">
-            <button 
-              className="btn btn-outline-secondary btn-sm"
-              onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-              aria-label={t('decreaseQuantity') || 'Decrease quantity'}
-              style={{ padding: '0.25rem 0.5rem' }}
-            >
-              <Dash size={12} />
-            </button>
-            <span className="btn btn-outline-secondary disabled btn-sm" style={{ padding: '0.25rem 0.5rem', minWidth: '2rem' }}>
-              {item.quantity}
-            </span>
-            <button 
-              className="btn btn-outline-secondary btn-sm"
-              onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-              aria-label={t('increaseQuantity') || 'Increase quantity'}
-              style={{ padding: '0.25rem 0.5rem' }}
-            >
-              <Plus size={12} />
-            </button>
-          </div>
+          <input
+            type="number"
+            min={1}
+            value={item.quantity}
+            onChange={e => onUpdateQuantity(item.id, Math.max(1, parseInt(e.target.value) || 1))}
+            style={{ width: '4rem', textAlign: 'center' }}
+            className="form-control form-control-sm d-inline-block p-0 m-0"
+            aria-label={t('quantity') || 'Quantity'}
+          />
           <button 
             className="btn btn-outline-danger btn-sm"
             onClick={() => onRemove(item.id)}
@@ -505,7 +495,8 @@ const CartSummary = ({
                 <tbody>
                   {mainItems.map(item => {
                     const supplementaryItems = getSupplementaryItems(item.id)
-                    const bundleTotal = item.price * item.quantity + supplementaryItems.reduce((sum, supp) => sum + (supp.price * supp.quantity), 0)
+                    // Only show parent total (not including supplements)
+                    const parentTotal = item.price * item.quantity
                     return (
                       <React.Fragment key={item.id}>
                         <tr>
@@ -520,13 +511,17 @@ const CartSummary = ({
                           </td>
                           <td className="text-end">{formatCurrency(item.price)}</td>
                           <td className="text-center">
-                            <div className="btn-group btn-group-sm" role="group">
-                              <button className="btn btn-outline-secondary btn-sm" onClick={() => onUpdateQuantity(item.id, item.quantity - 1)} disabled={item.quantity <= 1}><Dash size={12} /></button>
-                              <span className="btn btn-outline-secondary disabled btn-sm" style={{ minWidth: '2rem' }}>{item.quantity}</span>
-                              <button className="btn btn-outline-secondary btn-sm" onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}><Plus size={12} /></button>
-                            </div>
+                            <input
+                              type="number"
+                              min={1}
+                              value={item.quantity}
+                              onChange={e => onUpdateQuantity(item.id, Math.max(1, parseInt(e.target.value) || 1))}
+                              style={{ width: '4rem', textAlign: 'center' }}
+                              className="form-control form-control-sm d-inline-block p-0 m-0"
+                              aria-label={t('quantity') || 'Quantity'}
+                            />
                           </td>
-                          <td className="text-end fw-bold">{formatCurrency(bundleTotal)}</td>
+                          <td className="text-end fw-bold">{formatCurrency(parentTotal)}</td>
                           <td className="text-end">
                             <button className="btn btn-outline-danger btn-sm" onClick={() => onRemove(item.id)}><Trash size={12} /></button>
                           </td>
@@ -786,10 +781,10 @@ function POS() {
         setError('')
         
         const [productsRes, patientsRes, agentsRes, settingsRes] = await Promise.allSettled([
-          axios.get('/api/products'),
-          axios.get('/api/patients'),
-          axios.get('/api/sales-agents'),
-          axios.get('/api/settings')
+          axios.get(`${API_BASE}/api/products`),
+          axios.get(`${API_BASE}/api/patients`),
+          axios.get(`${API_BASE}/api/sales-agents`),
+          axios.get(`${API_BASE}/api/settings`)
         ])
 
         if (productsRes.status === 'fulfilled') {
@@ -844,7 +839,7 @@ function POS() {
     e.preventDefault()
     setSavingPatient(true)
     try {
-      const res = await axios.post('/api/patients', patientForm)
+      const res = await axios.post(`${API_BASE}/api/patients`, patientForm)
       setPatients(prev => [...prev, res.data])
       setSelectedPatient(res.data.id)
       setShowPatientModal(false)
@@ -869,7 +864,7 @@ function POS() {
     e.preventDefault()
     setSavingAgent(true)
     try {
-      const res = await axios.post('/api/sales-agents', agentForm)
+      const res = await axios.post(`${API_BASE}/api/sales-agents`, agentForm)
       setAgents(prev => [...prev, res.data])
       setSelectedAgent(res.data.id)
       setShowAgentModal(false)
@@ -903,9 +898,34 @@ function POS() {
         discountType: discountType
       }
 
-      const response = await axios.post('/api/sales', saleData)
-      openInvoiceModal({ saleId: response.data.id })
-      doClearCart()
+      const response = await axios.post(`${API_BASE}/api/sales`, saleData)
+      // Print in browser popup
+      const popup = window.open('', '_blank', 'width=900,height=1200');
+      if (!popup) return;
+      popup.document.write('<html><head><title>Invoice</title>');
+      popup.document.write('<link rel="stylesheet" href="/index.css" />');
+      popup.document.write('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />');
+      popup.document.write('</head><body><div id="invoice-root"></div></body></html>');
+      popup.document.close();
+      popup.onload = () => {
+        import('react-dom/client').then(ReactDOM => {
+          import('./Invoice').then(({ default: InvoicePage }) => {
+            const root = ReactDOM.createRoot(popup.document.getElementById('invoice-root'));
+            root.render(<InvoicePage saleId={response.data.id} />);
+            // Wait for content, then print
+            const observer = new popup.MutationObserver(() => {
+              observer.disconnect();
+              setTimeout(() => {
+                popup.focus();
+                popup.print();
+                popup.close();
+              }, 1200);
+            });
+            observer.observe(popup.document.getElementById('invoice-root'), { childList: true, subtree: true });
+          });
+        });
+      };
+      doClearCart();
     } catch (error) {
       console.error('Sale failed:', error)
       alert(t('saleFailed') || 'Failed to complete sale. Please try again.')
@@ -933,7 +953,7 @@ function POS() {
         discountType: discountType
       }
 
-      const response = await axios.post('/api/sales', saleData)
+      const response = await axios.post(`${API_BASE}/api/sales`, saleData)
       // Print logic (open popup, etc) would go here if needed
       openInvoiceModal({ saleId: response.data.id })
       doClearCart()
@@ -962,7 +982,7 @@ function POS() {
         discount: parseFloat(discount) || 0,
         discountType: discountType
       }
-      const response = await axios.post('/api/sales', saleData)
+      const response = await axios.post(`${API_BASE}/api/sales`, saleData)
       openInvoiceModal({ saleId: response.data.id })
       // Do NOT clear cart or reset POS
     } catch (error) {

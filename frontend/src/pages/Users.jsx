@@ -4,8 +4,7 @@ import { Plus, Search, ThreeDots, Pencil, Trash, Eye, Person, Envelope, Shield, 
 import { useTranslations } from '../hooks/useTranslations'
 import useUsers from '../hooks/useUsers'
 
-
-
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 function Users() {
   const { users, loading } = useUsers()
@@ -23,7 +22,7 @@ function Users() {
 
   const fetchRoles = async () => {
     try {
-      const res = await axios.get('/api/roles')
+      const res = await axios.get(`${API_BASE}/api/roles`)
       setRoles(res.data)
     } catch (err) {
       console.error('Failed to fetch roles:', err)
@@ -72,10 +71,10 @@ function Users() {
     setSaving(true)
     try {
       if (editing) {
-        await axios.put(`/api/users/${editing.id}`, form)
+        await axios.put(`${API_BASE}/api/users/${editing.id}`, form)
         setToast(t('userUpdated'))
       } else {
-        await axios.post('/api/users', form)
+        await axios.post(`${API_BASE}/api/users`, form)
         setToast(t('userAdded'))
       }
       closeModal()
@@ -90,7 +89,7 @@ function Users() {
   const handleDelete = async id => {
     if (!window.confirm('Delete this user?')) return
     try {
-      await axios.delete(`/api/users/${id}`)
+      await axios.delete(`${API_BASE}/api/users/${id}`)
       setToast(t('userDeleted'))
     } catch (err) {
       setToast(t('failedToSaveUser'))

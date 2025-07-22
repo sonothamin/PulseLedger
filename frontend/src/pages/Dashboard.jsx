@@ -34,6 +34,8 @@ import Modal from '../components/Modal.jsx'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend)
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+
 function Dashboard() {
   const [stats, setStats] = useState({
     totalSales: 0,
@@ -72,16 +74,13 @@ function Dashboard() {
         setError('')
         
         // Fetch dashboard statistics from API
-        const [salesRes, expensesRes] = await Promise.all([
-          axios.get('/api/sales/stats'),
-          axios.get('/api/expenses/stats')
-        ])
+        const res = await axios.get(`${API_BASE}/api/sales/stats`)
         
         setStats({
-          totalSales: salesRes.data.totalSales || 0,
-          totalExpenses: expensesRes.data.totalExpenses || 0,
-          todaySales: salesRes.data.todaySales || 0,
-          todayExpenses: expensesRes.data.todayExpenses || 0
+          totalSales: res.data.totalSales || 0,
+          totalExpenses: res.data.totalExpenses || 0,
+          todaySales: res.data.todaySales || 0,
+          todayExpenses: res.data.todayExpenses || 0
         })
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err)
@@ -96,7 +95,7 @@ function Dashboard() {
 
   useEffect(() => {
     setReportLoading(true)
-    axios.get('/api/reports/sales')
+    axios.get(`${API_BASE}/api/reports/sales`)
       .then(res => setSalesReport(res.data))
       .catch(() => setSalesReport(null))
       .finally(() => setReportLoading(false))
@@ -104,14 +103,14 @@ function Dashboard() {
 
   useEffect(() => {
     // Fetch recent expenses
-    axios.get('/api/expenses?limit=5&sort=desc')
+    axios.get(`${API_BASE}/api/expenses?limit=5&sort=desc`)
       .then(res => setExpenses(res.data || []))
       .catch(() => setExpenses([]))
   }, [])
 
   useEffect(() => {
     if (!showExpenseModal) return
-    axios.get('/api/expense-categories').then(res => setExpenseCategories(res.data)).catch(() => setExpenseCategories([]))
+    axios.get(`${API_BASE}/api/expense-categories`).then(res => setExpenseCategories(res.data)).catch(() => setExpenseCategories([]))
   }, [showExpenseModal])
 
   const netProfit = stats.totalSales - stats.totalExpenses
@@ -176,7 +175,7 @@ function Dashboard() {
   const handleExpenseAddCategory = async () => {
     if (expenseNewCategory.trim() && !expenseCategories.some(c => c.name === expenseNewCategory.trim())) {
       try {
-        const res = await axios.post('/api/expense-categories', { name: expenseNewCategory.trim() })
+        const res = await axios.post(`${API_BASE}/api/expense-categories`, { name: expenseNewCategory.trim() })
         setExpenseCategories([...expenseCategories, res.data])
         setExpenseForm(f => ({ ...f, categoryId: res.data.id }))
         setExpenseNewCategory('')
@@ -194,7 +193,7 @@ function Dashboard() {
     e.preventDefault()
     setExpenseSaving(true)
     try {
-      await axios.post('/api/expenses', { ...expenseForm })
+      await axios.post(`${API_BASE}/api/expenses`, { ...expenseForm })
       setExpenseToast(t('expenseAdded') || 'Expense added')
       setShowExpenseModal(false)
       setExpenseForm({ amount: '', categoryId: '', description: '', recipient: '' })

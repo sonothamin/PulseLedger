@@ -4,8 +4,7 @@ import { useCurrency } from '../hooks/useCurrency'
 import { Plus, Search, Pencil, Trash, Tag, CurrencyDollar, Check2, Square, ChevronDown, ChevronRight, QuestionCircle } from 'react-bootstrap-icons'
 import { useTranslations } from '../hooks/useTranslations'
 
-
-
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 function Products() {
   const [products, setProducts] = useState([])
@@ -33,7 +32,7 @@ function Products() {
     setLoading(true)
     setError('')
     try {
-      const res = await axios.get('/api/products')
+      const res = await axios.get(`${API_BASE}/api/products`)
       setProducts(res.data)
       // Extract unique categories
       const uniqueCategories = [...new Set(res.data.map(p => p.category).filter(Boolean))]
@@ -90,10 +89,10 @@ function Products() {
       if (payload.isSupplementary) payload.supplementaryIds = []
       payload.canSellStandalone = !!form.canSellStandalone
       if (editing) {
-        await axios.put(`/api/products/${editing.id}`, payload)
+        await axios.put(`${API_BASE}/api/products/${editing.id}`, payload)
         setToast(t('productUpdated'))
       } else {
-        await axios.post('/api/products', payload)
+        await axios.post(`${API_BASE}/api/products`, payload)
         setToast(t('productAdded'))
       }
       closeModal()
@@ -108,7 +107,7 @@ function Products() {
   const handleDelete = async id => {
     if (!window.confirm('Delete this product?')) return
     try {
-      await axios.delete(`/api/products/${id}`)
+      await axios.delete(`${API_BASE}/api/products/${id}`)
       setToast(t('productDeleted'))
       fetchProducts()
     } catch (err) {
@@ -198,9 +197,9 @@ function Products() {
         const existing = products.find(p => p.name === product.name)
         try {
           if (existing) {
-            await axios.put(`/api/products/${existing.id}`, product)
+            await axios.put(`${API_BASE}/api/products/${existing.id}`, product)
           } else {
-            await axios.post('/api/products', product)
+            await axios.post(`${API_BASE}/api/products`, product)
           }
           importedCount++
           setToast(t('importedProducts', { count: importedCount, total: rows.length }))

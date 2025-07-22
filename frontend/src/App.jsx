@@ -9,6 +9,8 @@ import { useTranslations } from './hooks/useTranslations'
 import PageTitle from './components/PageTitle'
 import useBranding from './hooks/useBranding'
 
+const API_BASE = import.meta.env.VITE_API_BASE;
+
 function getThemeOptions(t) {
   return [
     { value: 'system', label: t('themeSystem'), icon: <LaptopFill /> },
@@ -348,8 +350,29 @@ function AppShell() {
 
 function Root() {
   const { user, login, loading } = useAuth()
+
+  // Enhanced login: after login, fetch branding and store in localStorage
+  const loginWithBranding = async (username, password) => {
+    try {
+      await login(username, password)
+    } catch (err) {
+      throw err
+    }
+    try {
+      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+      const res = await axios.get(`${API_BASE}/api/settings`)
+      const brandingSetting = res.data.find(s => s.key === 'branding')
+      if (brandingSetting?.value) {
+        localStorage.setItem('branding', JSON.stringify(brandingSetting.value))
+      }
+    } catch (err) {
+      // fallback: clear branding if fetch fails
+      localStorage.removeItem('branding')
+    }
+  }
+
   if (loading) return <div className="d-flex justify-content-center align-items-center min-vh-100"><div className="spinner-border" /></div>
-  return user ? <AppShell /> : <Login onLogin={login} />
+  return user ? <AppShell /> : <Login onLogin={loginWithBranding} />
 }
 
 function App() {

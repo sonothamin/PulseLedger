@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useTranslations } from '../hooks/useTranslations'
 import { useCurrency } from '../hooks/useCurrency'
 import axios from 'axios'
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
 
 import { 
   Plus, 
@@ -49,7 +50,7 @@ function Sales() {
       try {
         setLoading(true)
         setError('')
-        const res = await axios.get('/api/sales')
+        const res = await axios.get(`${API_BASE}/api/sales`)
         setSales(res.data)
       } catch (err) {
         console.error('Failed to fetch sales:', err)
@@ -65,7 +66,7 @@ function Sales() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await axios.get('/api/settings')
+        const res = await axios.get(`${API_BASE}/api/settings`)
         const settingsMap = {}
         res.data.forEach(setting => {
           settingsMap[setting.key] = setting
@@ -184,13 +185,13 @@ function Sales() {
 
   const handleEditModalSave = async (updatedSale) => {
     try {
-      await axios.put(`/api/sales/${updatedSale.id}`, updatedSale)
+      await axios.put(`${API_BASE}/api/sales/${updatedSale.id}`, updatedSale)
       try {
-        await axios.post(`/api/sales/${updatedSale.id}/recalculate`)
+        await axios.post(`${API_BASE}/api/sales/${updatedSale.id}/recalculate`)
       } catch (err) {
         alert('Failed to recalculate sale total. Please check the invoice carefully.')
       }
-      const fresh = await axios.get(`/api/sales/${updatedSale.id}`)
+      const fresh = await axios.get(`${API_BASE}/api/sales/${updatedSale.id}`)
       setSales(sales => sales.map(s => s.id === updatedSale.id ? fresh.data : s))
       setShowEditModal(false)
       setEditingSale(null)
@@ -212,7 +213,7 @@ function Sales() {
   const handleDeleteSale = async (sale) => {
     if (!window.confirm(t('deleteConfirm') || 'Delete this sale?')) return;
     try {
-      await axios.delete(`/api/sales/${sale.id}`);
+      await axios.delete(`${API_BASE}/api/sales/${sale.id}`);
       setSales(sales => sales.filter(s => s.id !== sale.id));
     } catch (err) {
       alert(t('deleteFailed') || 'Failed to delete sale.');

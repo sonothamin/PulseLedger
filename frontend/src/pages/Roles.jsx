@@ -5,6 +5,7 @@ import { useTranslations } from '../hooks/useTranslations'
 import { useAuth } from '../context/AuthContext'
 import Toast from '../components/Toast'
 
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 // Import the permission tree
 const PERMISSION_TREE = {
@@ -314,7 +315,7 @@ function Roles() {
   const fetchRoles = async () => {
     setLoading(true)
     try {
-      const res = await axios.get('/api/roles')
+      const res = await axios.get(`${API_BASE}/api/roles`)
       setRoles(res.data)
     } catch (err) {
       console.error('Failed to load roles', err)
@@ -379,11 +380,11 @@ function Roles() {
     try {
       if (editing) {
         // Update existing role
-        await axios.put(`/api/roles/${editing.id}`, form)
+        await axios.put(`${API_BASE}/api/roles/${editing.id}`, form)
         showToast('Role updated successfully', 'success')
       } else {
         // Create new role
-        await axios.post('/api/roles', form)
+        await axios.post(`${API_BASE}/api/roles`, form)
         showToast('Role created successfully', 'success')
       }
       
@@ -407,7 +408,7 @@ function Roles() {
   const handleDelete = async id => {
     if (!window.confirm('Delete this role?')) return
     try {
-      await axios.delete(`/api/roles/${id}`)
+      await axios.delete(`${API_BASE}/api/roles/${id}`)
       showToast('Role deleted successfully', 'success')
       fetchRoles()
     } catch (err) {
