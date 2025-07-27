@@ -5,7 +5,8 @@ const { authenticate, authorize } = require('../middleware/auth');
 const { getPermissionTree } = require('../utils/permissions');
 
 router.get('/', authenticate, authorize(['roles:list', 'roles:view', 'roles:read']), listRoles);
-router.get('/permissions', authenticate, authorize(['roles:view', 'roles:read']), (req, res) => {
+router.get('/permissions', authenticate, authorize(['role:read', '*']), (req, res) => {
+  const { getPermissionTree } = require('../utils/permissions');
   res.json(getPermissionTree());
 });
 router.get('/:id', authenticate, authorize(['roles:view_details', 'roles:view', 'roles:read']), getRole);

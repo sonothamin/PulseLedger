@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { loadLanguage, getAvailableLanguages } from '../utils/languageLoader'
+import { loadLanguage } from '../utils/languageLoader'
 
 // Dynamically determine available languages from lang files (module scope)
 const langFiles = import.meta.glob('../lang/*.lang', { eager: true });
@@ -17,6 +17,9 @@ const availableLanguages = Object.entries(langFiles)
     return code ? { code, display } : null;
   })
   .filter(Boolean);
+
+// Track missing translation keys in dev
+const missingKeysLogged = new Set();
 
 export function useTranslations() {
   const [translations, setTranslations] = useState({})
@@ -47,9 +50,23 @@ export function useTranslations() {
   }, [])
 
   // Translation function
-  const t = useCallback((key, fallback = key) => {
-    return translations[key] || fallback
-  }, [translations])
+  const t = useCallback((key, varsOrFallback = key, fallbackMaybe) => {
+    let str = translations[key] || (typeof varsOrFallback === 'string' ? varsOrFallback : key);
+    let vars = (typeof varsOrFallback === 'object' && varsOrFallback !== null) ? varsOrFallback : undefined;
+    // Log missing keys in development
+    if (process.env.NODE_ENV === 'development' && !translations[key] && !missingKeysLogged.has(key)) {
+      // eslint-disable-next-line no-console
+      // console.warn(`[i18n] Missing translation key: '${key}'`);
+      missingKeysLogged.add(key);
+    }
+    // Interpolate variables if present
+    if (vars && typeof str === 'string') {
+      Object.entries(vars).forEach(([k, v]) => {
+        str = str.replaceAll(`{${k}}`, v);
+      });
+    }
+    return str;
+  }, [translations]);
 
   // Set dynamic page title
   const setPageTitle = useCallback((titleKey) => {

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { useCurrency } from '../hooks/useCurrency'
 import { Plus, Search, Pencil, Trash, Tag, CurrencyDollar, Check2, Square, ChevronDown, ChevronRight, QuestionCircle } from 'react-bootstrap-icons'
 import { useTranslations } from '../hooks/useTranslations'
+import { useAuth } from '../context/AuthHelpers'
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
@@ -27,8 +28,9 @@ function Products() {
   const [csvImporting, setCsvImporting] = useState(false)
   const [showCsvInfo, setShowCsvInfo] = useState(false)
   const [hideInactive, setHideInactive] = useState(false)
+  const { user } = useAuth();
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
@@ -37,14 +39,16 @@ function Products() {
       // Extract unique categories
       const uniqueCategories = [...new Set(res.data.map(p => p.category).filter(Boolean))]
       setCategories(uniqueCategories)
-    } catch (err) {
+    } catch {
       setError(t('failedToLoadProducts'))
     } finally {
       setLoading(false)
     }
-  }
+  }, [t]);
 
-  useEffect(() => { fetchProducts() }, [])
+  useEffect(() => {
+    if (user) fetchProducts();
+  }, [user, fetchProducts]);
 
   const openModal = (product = null) => {
     setEditing(product)
@@ -110,7 +114,7 @@ function Products() {
       await axios.delete(`${API_BASE}/api/products/${id}`)
       setToast(t('productDeleted'))
       fetchProducts()
-    } catch (err) {
+    } catch {
       setToast(t('failedToSaveUser'))
     }
   }
@@ -182,6 +186,8 @@ function Products() {
       const canSellIdx = cols.indexOf('canSellStandalone')
       if (nameIdx < 0 || priceIdx < 0) throw new Error('Missing required columns')
       let importedCount = 0
+      // First pass: create/update all products without supplementaryIds
+      const productMap = {} // name -> id
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i]
         const vals = row.split(',')
@@ -190,26 +196,42 @@ function Products() {
           price: Number(vals[priceIdx]),
           category: vals[categoryIdx]?.replace(/^"|"$/g, '') || '',
           isSupplementary: vals[isSuppIdx] === '1',
-          supplementaryIds: (vals[suppIdsIdx] || '').split(',').filter(Boolean).map(Number),
           canSellStandalone: canSellIdx >= 0 ? vals[canSellIdx] === '1' : false
         }
         // Try to find if product with same name exists
         const existing = products.find(p => p.name === product.name)
         try {
+          let res
           if (existing) {
-            await axios.put(`${API_BASE}/api/products/${existing.id}`, product)
+            res = await axios.put(`${API_BASE}/api/products/${existing.id}`, product)
+            productMap[product.name] = existing.id
           } else {
-            await axios.post(`${API_BASE}/api/products`, product)
+            res = await axios.post(`${API_BASE}/api/products`, product)
+            productMap[product.name] = res.data.id
           }
           importedCount++
-          setToast(t('importedProducts', { count: importedCount, total: rows.length }))
+          setToast(t('importedProductsProgress', { count: importedCount, total: rows.length }))
         } catch (err) {
           setToast(t('errorImportingProduct', { product: product.name, error: err.response?.data?.message || err.message || err }))
         }
       }
+      // Second pass: update supplementaryIds for all products
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i]
+        const vals = row.split(',')
+        const name = vals[nameIdx]?.replace(/^"|"$/g, '')
+        const supplementaryIds = (vals[suppIdsIdx] || '').split(',').filter(Boolean).map(Number)
+        if (supplementaryIds.length > 0) {
+          const id = productMap[name]
+          // Map supplementaryIds by name if possible
+          // (Assume supplementaryIds in CSV are product names, not IDs, if needed)
+          // If they are IDs, use as is
+          await axios.put(`${API_BASE}/api/products/${id}`, { supplementaryIds })
+        }
+      }
       setToast(t('importedProducts', { count: importedCount, total: rows.length }))
       fetchProducts()
-    } catch (err) {
+    } catch {
       setToast(t('failedToImportCSV'))
     } finally {
       setCsvImporting(false)
@@ -220,11 +242,6 @@ function Products() {
   // Helper for supplementary product filtering
   function getSupplementaryProducts(products, editingId) {
     return products.filter(p => p.isSupplementary && (!editingId || p.id !== editingId));
-  }
-
-  // Modularize form reset
-  function getDefaultForm() {
-    return { name: '', price: '', category: '', isSupplementary: false, supplementaryIds: [], isActive: true, canSellStandalone: false };
   }
 
   // Add Escape key support for modals

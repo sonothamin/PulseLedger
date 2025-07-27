@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslations } from '../hooks/useTranslations'
 import { Sun, Moon, Laptop, Person, Key } from 'react-bootstrap-icons'
+import Toast from '../components/Toast';
 
 const THEMES = [
   { value: 'system', label:'', icon: <Laptop /> },
@@ -36,7 +37,7 @@ function useTheme() {
   return [theme, setAndStoreTheme]
 }
 
-function loadBengaliFont(currentLanguage) {
+function useBengaliFont(currentLanguage) {
   useEffect(() => {
     if (currentLanguage === 'bn') {
       const fontId = 'hind-siliguri-font';
@@ -44,7 +45,7 @@ function loadBengaliFont(currentLanguage) {
         const style = document.createElement('style');
         style.id = fontId;
         style.innerHTML = `@font-face { font-family: 'Hind Siliguri'; src: url('/HindSiliguri-Regular.ttf') format('truetype'); font-weight: normal; font-style: normal; }
-        body, input, button, .card, .form-control, .form-label { font-family: 'Hind Siliguri', system-ui, Arial, sans-serif !important; }`;
+        body, input, textarea, select, button { font-family: 'Hind Siliguri', Arial, sans-serif !important; }`;
         document.head.appendChild(style);
       }
     }
@@ -80,7 +81,7 @@ function Login({ onLogin }) {
   const [error, setError] = useState('')
   const { t, setPageTitle, currentLanguage, availableLanguages, changeLanguage } = useTranslations()
   const [theme, setTheme] = useTheme()
-  loadBengaliFont(currentLanguage)
+  useBengaliFont(currentLanguage);
   const branding = useBrandingFromLocalStorage()
 
   useEffect(() => {
@@ -156,14 +157,19 @@ function Login({ onLogin }) {
     </button>
   )
 
+  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+  const logoSrc = branding?.logo?.startsWith('/uploads/')
+    ? `${API_BASE}${branding.logo}`
+    : branding?.logo || '/logo.svg';
+
   // Branding left column
   const leftBranding = (
     <div className="d-flex flex-column justify-content-center align-items-center h-100 w-100 px-4 px-md-5" style={{ minHeight: 400, ...getBrandingBg(), borderTopLeftRadius: 24, borderBottomLeftRadius: 24 }}>
       <div className="text-center mb-4">
         <img
-          src={branding?.logoUrl || '/logo.svg'}
+          src={logoSrc}
           alt={branding?.hospitalName || 'PulseLedger'}
-          style={{ width: 80, height: 80, objectFit: 'contain', marginBottom: 16, borderRadius: 16, background: '#fff', boxShadow: '0 2px 16px rgba(44,62,80,0.08)' }}
+          style={{ width: 120, height: 120, objectFit: 'contain', marginBottom: 16, borderRadius: 16, background: '#fff', boxShadow: '0 2px 16px rgba(44,62,80,0.08)' }}
           onError={e => { e.target.style.display = 'none'; }}
         />
         <h2 className="fw-bold mb-1" style={{ color: theme === 'dark' ? '#8ab4f8' : '#2563eb', letterSpacing: 1, fontSize: 28 }}>{branding?.hospitalName || 'PulseLedger'}</h2>
@@ -217,11 +223,6 @@ function Login({ onLogin }) {
                 />
               </div>
             </div>
-            {error && (
-              <div className="alert alert-danger fade-in" role="alert">
-                {error}
-              </div>
-            )}
             <button
               type="submit"
               className="btn btn-primary w-100 py-2 mt-2"
@@ -254,6 +255,10 @@ function Login({ onLogin }) {
   return (
     <>
       <div style={bgStyle} />
+      {/* Show error as toast instead of alert */}
+      {error && (
+        <Toast message={error} type="error" onClose={() => setError('')} />
+      )}
       <div className="min-vh-100 vw-100 d-flex align-items-stretch justify-content-center position-relative" style={{ zIndex: 1, minHeight: '100vh', width: '100vw' }}>
         {/* Theme & Language Toggle Top Right */}
         <div style={{ position: 'absolute', top: 24, right: 32, zIndex: 10, display: 'flex', alignItems: 'center' }}>

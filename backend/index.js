@@ -60,6 +60,11 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/lang', langRoutes);
 
+// 404 handler
+app.use((req, res, next) => {
+  res.status(404).json({ message: 'Not found' });
+});
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err);

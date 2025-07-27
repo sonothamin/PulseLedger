@@ -11,7 +11,6 @@ import { useCurrency } from '../hooks/useCurrency'
 function SalesAgents() {
   const [agents, setAgents] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({ name: '', phone: '', email: '', isActive: true })
@@ -30,7 +29,6 @@ function SalesAgents() {
   // Fetch agents
   const fetchAgents = async () => {
     setLoading(true)
-    setError('')
     try {
       const res = await axios.get('/api/sales-agents')
       setAgents(res.data)
@@ -40,8 +38,8 @@ function SalesAgents() {
         active: res.data.filter(a => a.isActive).length,
         totalSales: null // will be set after fetching performance
       })
-    } catch (err) {
-      setError('Failed to load agents')
+    } catch {
+      setToast('Failed to load agents')
     } finally {
       setLoading(false)
     }
@@ -55,7 +53,7 @@ function SalesAgents() {
       // Set total sales by agents
       const totalSales = Object.values(res.data.byAgent || {}).reduce((a, b) => a + b, 0)
       setSummary(s => ({ ...s, totalSales }))
-    } catch (err) {
+    } catch {
       // ignore
     }
   }

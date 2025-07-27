@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useTranslations } from '../hooks/useTranslations'
 import { useCurrency } from '../hooks/useCurrency'
+import useTheme from '../hooks/useTheme'
 import axios from 'axios'
 import { 
   ArrowUp, 
@@ -115,6 +116,7 @@ function Accounts() {
   const [error, setError] = useState('')
   const { t } = useTranslations()
   const { formatCurrency } = useCurrency()
+  const [theme] = useTheme()
   
   // Data states
   const [accountsData, setAccountsData] = useState({
@@ -227,13 +229,13 @@ function Accounts() {
     } finally {
       setLoading(false)
     }
-  }, [dateRange, startDate, endDate])
+  }, [dateRange, startDate, endDate, t])
 
   useEffect(() => {
     if (!isEditing || dateRange !== 'custom') {
       fetchAccountsData()
     }
-  }, [fetchAccountsData, isEditing])
+  }, [fetchAccountsData, isEditing, dateRange])
 
   const processDataByDate = (sales, expenses, fromDate, toDate) => {
     const dateMap = new Map()
@@ -295,7 +297,9 @@ function Accounts() {
         avgDailyProfit,
         bestDay,
         worstDay
-      }
+      },
+      sales, // <-- add this
+      expenses // <-- add this
     }
   }
 
@@ -401,38 +405,126 @@ function Accounts() {
 
   // When dateRange changes, update start/end unless custom
   useEffect(() => {
-    if (dateRange && dateRange !== 'custom' && accountsData.outflow.length > 0) {
-      // Use the server's latest date as 'today'
-      const allDates = accountsData.outflow.map(e => e.date);
-      const sortedDates = allDates.sort();
-      const today = sortedDates[sortedDates.length - 1];
+    if (dateRange && dateRange !== 'custom') {
       let s = '', e = '';
-      if (dateRange === 'this-week') {
-        // Find the start of the week for the latest date
+      if (dateRange === 'this-week' && accountsData.outflow.length > 0) {
+        // Find the start of the week for the latest date in data
+        const allDates = accountsData.outflow.map(e => e.date);
+        const sortedDates = allDates.sort();
+        const today = sortedDates[sortedDates.length - 1];
         const latest = new Date(today);
         const startOfWeek = new Date(latest);
         startOfWeek.setDate(latest.getDate() - latest.getDay());
         s = startOfWeek.toISOString().split('T')[0];
         e = today;
       } else if (dateRange === 'this-month') {
-        const latest = new Date(today);
-        const startOfMonth = new Date(latest.getFullYear(), latest.getMonth(), 1);
+        // Always use the real current month
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const today = now.toISOString().split('T')[0];
         s = startOfMonth.toISOString().split('T')[0];
         e = today;
-      } else if (!isNaN(Number(dateRange))) {
+      } else if (!isNaN(Number(dateRange)) && accountsData.outflow.length > 0) {
+        const allDates = accountsData.outflow.map(e => e.date);
+        const sortedDates = allDates.sort();
+        const today = sortedDates[sortedDates.length - 1];
         const days = parseInt(dateRange);
         const latest = new Date(today);
         const start = new Date(latest);
         start.setDate(latest.getDate() - days);
         s = start.toISOString().split('T')[0];
         e = today;
-      } else if (dateRange === 'today') {
+      } else if (dateRange === 'today' && accountsData.outflow.length > 0) {
+        const allDates = accountsData.outflow.map(e => e.date);
+        const sortedDates = allDates.sort();
+        const today = sortedDates[sortedDates.length - 1];
         s = e = today;
       }
-      setStartDate(s);
-      setEndDate(e);
+      if (s && e) {
+        setStartDate(s);
+        setEndDate(e);
+      }
     }
   }, [dateRange, accountsData.outflow]);
+
+  // Best Selling Products aggregation
+  const [bestSellingProducts, setBestSellingProducts] = useState([])
+  // Control for including supplementary products in best seller calculation
+  const [includeSupp, setIncludeSupp] = useState(true)
+  // Expense Category Pie Chart data
+  const [expenseCategoryData, setExpenseCategoryData] = useState({ labels: [], datasets: [] })
+  // Utility to get Bootstrap body color from CSS variable
+  function getBootstrapBodyColor() {
+    if (typeof window !== 'undefined') {
+      return getComputedStyle(document.body).getPropertyValue('--bs-body-color') || '#222';
+    }
+    return '#222';
+  }
+
+  const expensePieOptions = useMemo(() => {
+    const bodyColor = getBootstrapBodyColor().trim() || '#222';
+    return {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: bodyColor,
+            font: { size: 14 }
+          }
+        },
+        tooltip: {
+          bodyColor: bodyColor,
+          callbacks: {
+            label: ctx => `${ctx.label}: ${formatCurrency(ctx.parsed)}`
+          }
+        }
+      }
+    }
+  }, [formatCurrency, accountsData, /* triggers re-read on theme change */])
+
+  useEffect(() => {
+    // Aggregate best selling products from sales data
+    if (accountsData.sales && Array.isArray(accountsData.sales)) {
+      const productMap = {}
+      accountsData.sales.forEach(sale => {
+        if (Array.isArray(sale.SaleItems)) {
+          sale.SaleItems.forEach(item => {
+            if (!includeSupp && item.isSupplementary) return;
+            const name = item.Product?.name || item.productName || item.name || '—'
+            if (!productMap[name]) productMap[name] = 0
+            productMap[name] += item.quantity || 0
+          })
+        }
+      })
+      const sorted = Object.entries(productMap)
+        .map(([productName, quantity]) => ({ productName, quantity }))
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 7)
+      setBestSellingProducts(sorted)
+    }
+    // Aggregate expenses by category for pie chart
+    if (accountsData.expenses && Array.isArray(accountsData.expenses)) {
+      const categoryMap = {}
+      accountsData.expenses.forEach(exp => {
+        const cat = exp.ExpenseCategory?.name || exp.categoryName || 'Other'
+        if (!categoryMap[cat]) categoryMap[cat] = 0
+        categoryMap[cat] += exp.amount || 0
+      })
+      const labels = Object.keys(categoryMap)
+      const data = Object.values(categoryMap)
+      setExpenseCategoryData({
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: [
+            '#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc949','#af7aa1','#ff9da7','#9c755f','#bab0ab'
+          ].slice(0, labels.length),
+          borderWidth: 1
+        }]
+      })
+    }
+  }, [accountsData, formatCurrency, theme, includeSupp])
 
   if (loading) {
     return (
@@ -903,6 +995,65 @@ function Accounts() {
         </div>
       </section>
 
+      {/* Best Selling Products & Expense Category Pie Chart Row */}
+      <div className="row mb-4">
+        {/* Best Selling Products */}
+        <div className="col-lg-6 mb-3 mb-lg-0">
+          <div className="card h-100 shadow-sm border-0">
+            <div className="card-header bg-transparent d-flex align-items-center justify-content-between">
+              <div className="d-flex align-items-center">
+                <BarChart className="me-2 text-primary" size={20} />
+                <h5 className="mb-0">{t('accountsBestSellingProducts') || 'Best Selling Products'}</h5>
+              </div>
+              <div className="form-check form-switch ms-2">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="includeSuppSwitch"
+                  checked={includeSupp}
+                  onChange={e => setIncludeSupp(e.target.checked)}
+                />
+                <label className="form-check-label small" htmlFor="includeSuppSwitch">
+                  {includeSupp ? t('includeSuppProducts') || 'Incl. Supplementary' : t('excludeSuppProducts') || 'Excl. Supplementary'}
+                </label>
+              </div>
+            </div>
+            <div className="card-body">
+              {bestSellingProducts.length === 0 ? (
+                <div className="text-muted text-center py-4">{t('noData') || 'No data available'}</div>
+              ) : (
+                <ol className="list-group list-group-numbered list-group-flush">
+                  {bestSellingProducts.map((item, idx) => (
+                    <li key={item.productName} className="list-group-item d-flex justify-content-between align-items-center bg-transparent border-0 px-0 py-2">
+                      <span className="fw-semibold text-truncate" style={{ maxWidth: 180 }}>{item.productName}</span>
+                      <span className="badge bg-primary bg-opacity-10 text-primary fw-semibold" style={{ minWidth: 48 }}>{item.quantity}</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </div>
+        </div>
+        {/* Expense Category Pie Chart */}
+        <div className="col-lg-6">
+          <div className="card h-100 shadow-sm border-0">
+            <div className="card-header bg-transparent d-flex align-items-center">
+              <PieChart className="me-2 text-primary" size={20} />
+              <h5 className="mb-0">{t('accountsExpenseCategoryBreakdown') || 'Expense Category Breakdown'}</h5>
+            </div>
+            <div className="card-body d-flex align-items-center justify-content-center text-body" style={{ minHeight: 220 }}>
+              {expenseCategoryData && expenseCategoryData.labels.length > 0 ? (
+                <div style={{ width: '100%', maxWidth: 320 }}>
+                  <Doughnut data={expenseCategoryData} options={expensePieOptions} />
+                </div>
+              ) : (
+                <div className="text-muted text-center w-100">{t('noData') || 'No data available'}</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Daily Ledger Section - Last Section */}
       <section ref={ledgerRef} className="mb-5">
         <header className="d-flex align-items-center mb-3">
@@ -934,7 +1085,7 @@ function Accounts() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedProfit.map((day, index) => {
+                  {sortedProfit.map((day) => {
                       const runningBalance = accountsData.profit
                         .slice(0, day.index + 1)
                         .reduce((sum, d) => sum + d.amount, 0)

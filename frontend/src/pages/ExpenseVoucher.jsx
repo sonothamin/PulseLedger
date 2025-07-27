@@ -1,71 +1,32 @@
 import { useEffect, useState, useRef } from 'react';
 import useBranding from '../hooks/useBranding';
 import { useCurrency } from '../hooks/useCurrency';
-import { useAuth } from '../context/AuthContext';
-import { useTranslations } from '../hooks/useTranslations';
+import { useAuth } from '../context/AuthHelpers';
 import axios from 'axios';
 import { GeoAlt, Telephone, Envelope, Globe } from 'react-bootstrap-icons';
-import useUsers from '../hooks/useUsers';
 
-function ExpenseVoucher({ expenseId, onClose }) {
-  const { formatCurrency } = useCurrency();
-  const { t } = useTranslations();
-  const { branding, loading: brandingLoading } = useBranding();
+function ExpenseVoucher({ expense, category, branding, formatCurrency, cashier, currentDate, voucherNumber, logoSrc }) {
   const printAreaRef = useRef(null);
-  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
-  const [loading, setLoading] = useState(true);
-  const [expense, setExpense] = useState(null);
-  const [categories, setCategories] = useState([]);
-  const { users, loading: usersLoading } = useUsers();
-  const [cashier, setCashier] = useState(null);
-  const [managingDirector, setManagingDirector] = useState(null);
-
-  useEffect(() => {
-    if (!expenseId) return;
-    setLoading(true);
-    Promise.all([
-      axios.get(`${API_BASE}/api/expenses/${expenseId}`),
-      axios.get(`${API_BASE}/api/expense-categories`)
-    ]).then(([expenseRes, catRes]) => {
-      setExpense(expenseRes.data);
-      setCategories(catRes.data);
-      // Prefer joined user object if present
-      let cashierObj = expenseRes.data.Creator || expenseRes.data.cashier || null;
-      if (!cashierObj && users.length > 0) {
-        cashierObj = users.find(u => u.id === expenseRes.data.createdBy) || null;
-      }
-      setCashier(cashierObj);
-      // Find managing director
-      const md = users.find(u => u.Role?.name?.toLowerCase() === 'managing director');
-      setManagingDirector(md);
-    }).finally(() => setLoading(false));
-  }, [expenseId]);
-
-  if (loading || brandingLoading || usersLoading) {
+  if (!expense || !category || !branding || !formatCurrency || !cashier || !currentDate || !voucherNumber || !logoSrc) {
     return <div className="d-flex justify-content-center align-items-center py-5"><div className="spinner-border" /></div>;
   }
-  if (!expense) {
-    return <div className="container py-5 text-center"><h4>Expense data not found.</h4></div>;
-  }
-
-  const category = categories.find(c => c.id === expense.categoryId);
-  const currentDate = expense.createdAt ? new Date(expense.createdAt).toLocaleString() : new Date().toLocaleString();
-  const voucherNumber = expense.id || 'Draft';
-
-  const logoSrc = branding.logo?.startsWith('/uploads/')
-    ? API_BASE + branding.logo
-    : branding.logo;
-
   return (
     <div className="expense-voucher-container" ref={printAreaRef}>
       <style>{`
+        @font-face {
+          font-family: 'Hind Siliguri';
+          src: url('/HindSiliguri-Regular.ttf') format('truetype');
+          font-weight: normal;
+          font-style: normal;
+          font-display: swap;
+        }
         .expense-voucher-container {
           width: 210mm;
           min-height: 297mm;
           margin: 0 auto;
           padding: 20mm;
           background: white;
-          font-family: 'Arial', sans-serif;
+          font-family: 'Hind Siliguri', system-ui, Avenir, Helvetica, Arial, sans-serif;
           font-size: 13px;
           color: #000;
           box-sizing: border-box;
@@ -140,6 +101,7 @@ function ExpenseVoucher({ expenseId, onClose }) {
         .ev-details-value {
           color: #000;
           font-weight: 500;
+          font-size: 17px;
         }
         .ev-hr {
           border: none;
@@ -167,7 +129,7 @@ function ExpenseVoucher({ expenseId, onClose }) {
         }
         .ev-section-title {
           font-weight: bold;
-          font-size: 14px;
+          font-size: 15px;
           margin-bottom: 6px;
           color: #333;
           margin-top: 15px;
@@ -176,7 +138,7 @@ function ExpenseVoucher({ expenseId, onClose }) {
           margin-bottom: 10px;
           word-break: break-word;
           white-space: pre-line;
-          font-size: 13px;
+          font-size: 14px;
           color: #222;
         }
         .ev-category-block {
@@ -205,7 +167,7 @@ function ExpenseVoucher({ expenseId, onClose }) {
         .ev-footer {
           margin-top: auto;
           text-align: center;
-          font-size: 13px;
+          font-size: 14px;
           color: #666;
           font-style: italic;
           border-top: 1px solid #bbb;
@@ -238,7 +200,7 @@ function ExpenseVoucher({ expenseId, onClose }) {
           </div>
           <div className="ev-hospital-details-title-row">
             <div className="ev-hospital-details">
-              <div style={{ fontWeight: 800, fontSize: '1.6rem' }}>{branding.hospitalName}</div>
+              <div style={{ fontWeight: 800, fontSize: '1.5rem' }}>{branding.hospitalName}</div>
               {branding.address && <div><GeoAlt size={13} style={{ marginRight: 4, marginBottom: 2 }} />{branding.address}</div>}
               {branding.contactNumber && <div><Telephone size={13} style={{ marginRight: 4, marginBottom: 2 }} />{branding.contactNumber}</div>}
               {branding.email && <div><Envelope size={13} style={{ marginRight: 4, marginBottom: 2 }} />{branding.email}</div>}
@@ -261,7 +223,7 @@ function ExpenseVoucher({ expenseId, onClose }) {
       </div>
       <hr className="ev-hr" />
       {/* Category and Description Section */}
-      <div className="ev-category-block"><span className="ev-details-label">Category:</span> <span className="ev-details-value">{category?.name || '-'}</span></div>
+      <div className="ev-category-block"><span className="ev-details-label">Category:</span> <span className="ev-details-label">{category?.name || '-'}</span></div>
       <div className="ev-section-title">Description:</div>
       <div className="ev-description-block" dangerouslySetInnerHTML={{ __html: expense.description || '-' }} />
       {/* Spacer to push signatures to near bottom, but not flush with footer */}
@@ -278,7 +240,7 @@ function ExpenseVoucher({ expenseId, onClose }) {
         </div>
         <div className="ev-signature-block">
           <div className="ev-signature-line"></div>
-          <div className="ev-signature-label">{managingDirector ? 'Managing Director' : 'Approving Authority'}<br/>{managingDirector?.name || 'Managing Director'}</div>
+          <div className="ev-signature-label">Approving Authority<br/>Managing Director</div>
         </div>
       </div>
       {/* Validity Notice grouped with signatures */}

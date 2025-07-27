@@ -40,3 +40,59 @@
 .read-the-docs {
   color: #888;
 }
+
+.sidebar-collapsed .nav-link span:last-child { display: none !important; }
+.sidebar-collapsed h4 { display: none !important; }
+.sidebar-collapsed { width: 64px !important; }
+.nav-link.active { font-weight: 600; }
+
+/* Header and User Menu Styles */
+.navbar-brand {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.dropdown-menu {
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.btn-link.nav-link:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+[data-bs-theme="dark"] .btn-link.nav-link:hover {
+  background-color: rgba(255,255,255,0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sidebar-collapsed, nav.bg-light { width: 0 !important; min-width: 0 !important; overflow: hidden; }
+  .navbar-brand { font-size: 1.1rem; }
+}
+
+@media (max-width: 576px) {
+  .navbar-brand { font-size: 1rem; }
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  position: relative;
+}
+
+.sidebar .sidebar-brand {
+  flex: 0 0 auto;
+}
+
+.sidebar .sidebar-nav-scroll {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.sidebar .sidebar-version {
+  flex: 0 0 auto;
+}

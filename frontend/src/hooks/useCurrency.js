@@ -9,7 +9,12 @@ export function useCurrency() {
     const fetchCurrencySettings = async () => {
       try {
         const res = await axios.get('/api/settings')
-        const currencySetting = res.data.find(s => s.key === 'currency')
+        let currencySetting = null;
+        if (Array.isArray(res.data)) {
+          currencySetting = res.data.find(s => s.key === 'currency');
+        } else {
+          console.warn('[useCurrency] /api/settings did not return an array:', res.data);
+        }
         if (currencySetting?.value) {
           setCurrency(currencySetting.value)
         }

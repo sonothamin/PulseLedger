@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { useCurrency } from '../hooks/useCurrency'
-import { useAuth } from '../context/AuthContext'
-import { useTranslations } from '../hooks/useTranslations'
 import { GeoAlt, Telephone, Envelope, Globe, Facebook } from 'react-bootstrap-icons'
 import axios from 'axios'
 import React from 'react'
@@ -23,7 +21,6 @@ function InvoiceFooter({ user, branding }) {
 
 function InvoicePage({ saleId }) {
   const { formatCurrency } = useCurrency()
-  const { t } = useTranslations()
   const { branding, loading: brandingLoading } = useBranding()
   const printAreaRef = useRef(null)
   const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
@@ -36,7 +33,6 @@ function InvoicePage({ saleId }) {
   const [user, setUser] = useState(null)
   const [discount, setDiscount] = useState(0)
   const [discountType, setDiscountType] = useState('fixed')
-  const [products, setProducts] = useState([])
 
   useEffect(() => {
     if (!saleId) return
@@ -51,7 +47,6 @@ function InvoicePage({ saleId }) {
         setDiscount(saleData.discount)
         setDiscountType(saleData.discountType)
         const prodRes = await axios.get(`${API_BASE}/api/products`)
-        setProducts(prodRes.data)
         const cartItems = (saleData.items || saleData.SaleItems || []).map(item => {
           const product = prodRes.data.find(p => p.id === item.productId)
           return product ? { ...product, ...item } : item
@@ -59,7 +54,7 @@ function InvoicePage({ saleId }) {
         setCart(cartItems)
       })
       .finally(() => setLoading(false))
-  }, [saleId])
+  }, [saleId, API_BASE]);
 
   if (loading || brandingLoading) {
     return <div className="d-flex justify-content-center align-items-center py-5"><div className="spinner-border" /></div>
@@ -102,13 +97,20 @@ function InvoicePage({ saleId }) {
   return (
     <div className="invoice-container" ref={printAreaRef}>
       <style>{`
+        @font-face {
+          font-family: 'Hind Siliguri';
+          src: url('/HindSiliguri-Regular.ttf') format('truetype');
+          font-weight: normal;
+          font-style: normal;
+          font-display: swap;
+        }
         .invoice-container {
           width: 210mm;
           min-height: 297mm;
           margin: 0 auto;
           padding: 20mm;
           background: white;
-          font-family: 'Arial', sans-serif;
+          font-family: 'Hind Siliguri', system-ui, Avenir, Helvetica, Arial, sans-serif;
           font-size: 12px;
           line-height: 1.4;
           color: #000;
@@ -280,17 +282,20 @@ function InvoicePage({ saleId }) {
             padding: 0;
           }
           .invoice-container {
-            width: 100%;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20mm;
-            box-shadow: none;
-            border: none;
-            display: flex;
-            flex-direction: column;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 20mm !important;
+            box-shadow: none !important;
+            border: none !important;
+            display: block !important;
+            min-height: unset !important;
           }
           .invoice-table {
-            page-break-inside: avoid;
+            page-break-inside: auto !important;
+          }
+          .invoice-table tr {
+            page-break-inside: avoid !important;
+            page-break-after: auto !important;
           }
           .social-links {
             display: block !important;
@@ -392,36 +397,43 @@ function InvoicePage({ saleId }) {
       <table className="invoice-table">
         <thead>
           <tr>
-            <th style={{ width: '50%' }}>Product</th>
+            <th style={{ width: '6%' }}>Sl.</th>
+            <th style={{ width: '44%' }}>Product</th>
             <th style={{ width: '15%' }}>Qty</th>
             <th style={{ width: '17.5%' }}>Price</th>
             <th style={{ width: '17.5%' }}>Total</th>
           </tr>
         </thead>
         <tbody>
-          {mainItems.map((item) => (
-            <React.Fragment key={item.id}>
-              {/* Defensive: skip if item is supplementary or has a supplementaryParentId (shouldn't happen, but just in case) */}
-              {(!item.isSupplementary && !item.supplementaryParentId) && (
-                <>
-                  <tr>
+          {(() => {
+            let sl = 1;
+            const rows = [];
+            mainItems.forEach((item) => {
+              if (!item.isSupplementary && !item.supplementaryParentId) {
+                rows.push(
+                  <tr key={item.id}>
+                    <td className="text-center">{sl++}</td>
                     <td className="product-name">{item.name}</td>
                     <td className="text-center">{item.quantity}</td>
                     <td className="text-right">{formatCurrency(item.price)}</td>
                     <td className="text-right">{formatCurrency(item.price * item.quantity)}</td>
                   </tr>
-                  {getSupplementaryItems(item.productId || item.id).map(supp => (
+                );
+                getSupplementaryItems(item.productId || item.id).forEach((supp) => {
+                  rows.push(
                     <tr key={item.id + '-' + supp.id}>
+                      <td className="text-center">{sl++}</td>
                       <td className="supplementary-item">+ {supp.name}</td>
                       <td className="text-center supplementary-item">{supp.quantity}</td>
                       <td className="text-right supplementary-item">{formatCurrency(supp.price)}</td>
                       <td className="text-right supplementary-item">{formatCurrency(supp.price * supp.quantity)}</td>
                     </tr>
-                  ))}
-                </>
-              )}
-            </React.Fragment>
-          ))}
+                  );
+                });
+              }
+            });
+            return rows;
+          })()}
         </tbody>
       </table>
       {/* Totals */}

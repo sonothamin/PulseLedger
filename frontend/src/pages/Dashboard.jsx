@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslations } from '../hooks/useTranslations'
-import { useAuth, usePermission } from '../context/AuthContext'
+import { useAuth, usePermission } from '../context/AuthHelpers'
+import useBranding from '../hooks/useBranding';
 import { useCurrency } from '../hooks/useCurrency'
 import axios from 'axios'
 import { 
@@ -31,6 +32,9 @@ import {
 import { useNavigate } from 'react-router-dom'
 import ExpenseForm from '../components/UI/ExpenseForm'
 import Modal from '../components/Modal.jsx'
+import ExpenseVoucher from './ExpenseVoucher';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend)
 
@@ -47,6 +51,7 @@ function Dashboard() {
   const [error, setError] = useState('')
   const { t } = useTranslations()
   const { user } = useAuth()
+  const { branding } = useBranding();
   const { formatCurrency } = useCurrency()
   const [salesReport, setSalesReport] = useState(null)
   const [reportLoading, setReportLoading] = useState(true)
@@ -54,11 +59,11 @@ function Dashboard() {
   const navigate = useNavigate()
   // Permission helpers
   const hasPOS = usePermission('pos:view');
-  const hasExpense = usePermission('expenses:create');
-  const hasAccounts = usePermission('accounts:view');
-  const hasAudit = usePermission('audit:view');
-  const hasUsers = usePermission('users:view');
-  const hasRoles = usePermission('roles:view');
+  const hasExpense = usePermission('expense:create');
+  const hasAccounts = usePermission('account:manage');
+  const hasAudit = usePermission('auditLog:read');
+  const hasUsers = usePermission('user:list');
+  const hasRoles = usePermission('role:read');
   const [showExpenseModal, setShowExpenseModal] = useState(false)
   const [expenseForm, setExpenseForm] = useState({ amount: '', categoryId: '', description: '', recipient: '' })
   const [expenseSaving, setExpenseSaving] = useState(false)
@@ -67,15 +72,17 @@ function Dashboard() {
   const [expenseShowAddCategory, setExpenseShowAddCategory] = useState(false)
   const [expenseToast, setExpenseToast] = useState('')
 
+  console.log('[Dashboard] Initial render', { stats, salesReport, expenses, loading, error, user });
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true)
         setError('')
-        
+        console.log('[Dashboard] Fetching /api/sales/stats...');
         // Fetch dashboard statistics from API
         const res = await axios.get(`${API_BASE}/api/sales/stats`)
-        
+        console.log('[Dashboard] /api/sales/stats response:', res.data);
         setStats({
           totalSales: res.data.totalSales || 0,
           totalExpenses: res.data.totalExpenses || 0,
@@ -83,10 +90,11 @@ function Dashboard() {
           todayExpenses: res.data.todayExpenses || 0
         })
       } catch (err) {
-        console.error('Failed to fetch dashboard data:', err)
+        console.error('[Dashboard] Failed to fetch dashboard data:', err)
         setError('Failed to load dashboard data')
       } finally {
         setLoading(false)
+        console.log('[Dashboard] Done loading stats', { stats });
       }
     }
 
@@ -95,18 +103,34 @@ function Dashboard() {
 
   useEffect(() => {
     setReportLoading(true)
+    console.log('[Dashboard] Fetching /api/reports/sales...');
     axios.get(`${API_BASE}/api/reports/sales`)
-      .then(res => setSalesReport(res.data))
-      .catch(() => setSalesReport(null))
-      .finally(() => setReportLoading(false))
-  }, [])
+      .then(res => {
+        setSalesReport(res.data)
+        console.log('[Dashboard] /api/reports/sales response:', res.data);
+      })
+      .catch((err) => {
+        setSalesReport(null)
+        console.error('[Dashboard] /api/reports/sales error:', err);
+      })
+      .finally(() => {
+        setReportLoading(false)
+        console.log('[Dashboard] Done loading sales report', { salesReport });
+      })
+  }, [stats]);
 
   useEffect(() => {
-    // Fetch recent expenses
+    console.log('[Dashboard] Fetching /api/expenses?limit=5&sort=desc...');
     axios.get(`${API_BASE}/api/expenses?limit=5&sort=desc`)
-      .then(res => setExpenses(res.data || []))
-      .catch(() => setExpenses([]))
-  }, [])
+      .then(res => {
+        setExpenses(res.data || [])
+        console.log('[Dashboard] /api/expenses response:', res.data);
+      })
+      .catch((err) => {
+        setExpenses([])
+        console.error('[Dashboard] /api/expenses error:', err);
+      })
+  }, [salesReport]);
 
   useEffect(() => {
     if (!showExpenseModal) return
@@ -114,7 +138,6 @@ function Dashboard() {
   }, [showExpenseModal])
 
   const netProfit = stats.totalSales - stats.totalExpenses
-  const todayProfit = stats.todaySales - stats.todayExpenses
 
   // Prepare chart data
   let chartData = null
@@ -180,7 +203,9 @@ function Dashboard() {
         setExpenseForm(f => ({ ...f, categoryId: res.data.id }))
         setExpenseNewCategory('')
         setExpenseShowAddCategory(false)
-      } catch {}
+      } catch {
+        // ignore
+      }
     }
   }
   // Expense form change
@@ -204,13 +229,91 @@ function Dashboard() {
     }
   }
 
-  if (loading) {
+  // Add this handler for Save and Print
+  const handleExpenseSaveAndPrint = async () => {
+    setExpenseSaving(true);
+    try {
+      const res = await axios.post(`${API_BASE}/api/expenses`, { ...expenseForm });
+      setExpenseToast(t('expenseAdded') || 'Expense added');
+      setShowExpenseModal(false);
+      setExpenseForm({ amount: '', categoryId: '', description: '', recipient: '' });
+      // Fetch all required data for the voucher
+      const expenseId = res.data.id;
+      const [expenseRes, catRes] = await Promise.all([
+        axios.get(`${API_BASE}/api/expenses/${expenseId}`),
+        axios.get(`${API_BASE}/api/expense-categories`)
+      ]);
+      const expense = expenseRes.data;
+      const categories = catRes.data;
+      const category = categories.find(c => c.id === expense.categoryId);
+      const cashier = expense.Creator || expense.cashier || null;
+      const currentDate = expense.createdAt ? new Date(expense.createdAt).toLocaleString() : new Date().toLocaleString();
+      const voucherNumber = expense.id || 'Draft';
+      const logoSrc = branding.logo?.startsWith('/uploads/')
+        ? API_BASE + branding.logo
+        : branding.logo;
+      // Print voucher in popup (robust, context-free)
+      const popup = window.open('', '_blank', 'width=900,height=1200');
+      if (!popup) return;
+      popup.document.write('<html><head><title>Expense Voucher</title>');
+      popup.document.write('<link rel="preload" href="/HindSiliguri-Regular.ttf" as="font" type="font/ttf" crossorigin="anonymous">');
+      popup.document.write('<link rel="stylesheet" href="/index.css" />');
+      popup.document.write('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />');
+      popup.document.write('</head><body><div id="voucher-root"></div></body></html>');
+      popup.document.close();
+      popup.onload = () => {
+        const root = ReactDOM.createRoot(popup.document.getElementById('voucher-root'));
+        root.render(
+          React.createElement(ExpenseVoucher, {
+            expense,
+            category,
+            branding,
+            formatCurrency,
+            cashier,
+            currentDate,
+            voucherNumber,
+            logoSrc
+          })
+        );
+        // Wait for content, then print
+        const observer = new popup.MutationObserver(() => {
+          observer.disconnect();
+          setTimeout(() => {
+            popup.focus();
+            popup.print();
+            popup.close();
+          }, 1200);
+        });
+        observer.observe(popup.document.getElementById('voucher-root'), { childList: true, subtree: true });
+      };
+    } catch {
+      setExpenseToast(t('failedToSaveExpense') || 'Failed to save expense');
+    } finally {
+      setExpenseSaving(false);
+    }
+  };
+
+  if (loading || reportLoading) {
+    console.log('[Dashboard] Loading spinner shown (loading or reportLoading)');
     return (
       <div className="d-flex justify-content-center align-items-center py-5">
         <div className="spinner-border" />
       </div>
-    )
+    );
   }
+
+  if (!salesReport) {
+    console.log('[Dashboard] No sales report data available.');
+    return <div className="alert alert-warning">No sales report data available.</div>;
+  }
+
+  console.log('[Dashboard] Render main UI', { stats, salesReport, expenses, loading, error });
+
+  // Calculate today's expenses from the expenses array
+  const today = new Date().toISOString().split('T')[0];
+  const todaysExpenses = expenses
+    .filter(exp => exp.createdAt && exp.createdAt.split('T')[0] === today)
+    .reduce((sum, exp) => sum + (exp.amount || 0), 0);
 
   return (
     <div>
@@ -220,61 +323,7 @@ function Dashboard() {
       
       {/* Stats Cards */}
       <div className="row g-4 mb-4">
-        <div className="col-md-3">
-          <div className="dashboard-summary-card card border-0 shadow-sm">
-            <div className="card-body">
-              <div className="d-flex align-items-center">
-                <div className="flex-shrink-0">
-                  <div className="bg-primary bg-opacity-10 p-3 rounded">
-                    <CurrencyDollar className="text-primary" size={24} />
-                  </div>
-                </div>
-                <div className="flex-grow-1 ms-3">
-                  <h6 className="text-muted mb-1">{t('totalSales')}</h6>
-                  <h4 className="mb-0">{formatCurrency(stats.totalSales)}</h4>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="col-md-3">
-          <div className="dashboard-summary-card card border-0 shadow-sm">
-            <div className="card-body">
-              <div className="d-flex align-items-center">
-                <div className="flex-shrink-0">
-                  <div className="bg-danger bg-opacity-10 p-3 rounded">
-                    <CreditCard className="text-danger" size={24} />
-                  </div>
-                </div>
-                <div className="flex-grow-1 ms-3">
-                  <h6 className="text-muted mb-1">{t('totalExpenses')}</h6>
-                  <h4 className="mb-0">{formatCurrency(stats.totalExpenses)}</h4>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="col-md-3">
-          <div className="dashboard-summary-card card border-0 shadow-sm">
-            <div className="card-body">
-              <div className="d-flex align-items-center">
-                <div className="flex-shrink-0">
-                  <div className="bg-success bg-opacity-10 p-3 rounded">
-                    <ArrowUp className="text-success" size={24} />
-                  </div>
-                </div>
-                <div className="flex-grow-1 ms-3">
-                  <h6 className="text-muted mb-1">{t('netProfit')}</h6>
-                  <h4 className="mb-0">{formatCurrency(netProfit)}</h4>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="col-md-3">
+        <div className="col-md-4">
           <div className="dashboard-summary-card card border-0 shadow-sm">
             <div className="card-body">
               <div className="d-flex align-items-center">
@@ -286,6 +335,40 @@ function Dashboard() {
                 <div className="flex-grow-1 ms-3">
                   <h6 className="text-muted mb-1">{t('todaySales')}</h6>
                   <h4 className="mb-0">{formatCurrency(stats.todaySales)}</h4>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="dashboard-summary-card card border-0 shadow-sm">
+            <div className="card-body">
+              <div className="d-flex align-items-center">
+                <div className="flex-shrink-0">
+                  <div className="bg-danger bg-opacity-10 p-3 rounded">
+                    <CreditCard className="text-danger" size={24} />
+                  </div>
+                </div>
+                <div className="flex-grow-1 ms-3">
+                  <h6 className="text-muted mb-1">{t('todayExpenses') || 'Today\'s Expenses'}</h6>
+                  <h4 className="mb-0">{formatCurrency(todaysExpenses)}</h4>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="dashboard-summary-card card border-0 shadow-sm">
+            <div className="card-body">
+              <div className="d-flex align-items-center">
+                <div className="flex-shrink-0">
+                  <div className="bg-success bg-opacity-10 p-3 rounded">
+                    <ArrowUp className="text-success" size={24} />
+                  </div>
+                </div>
+                <div className="flex-grow-1 ms-3">
+                  <h6 className="text-muted mb-1">{t('todayProfit') || 'Today\'s Profit'}</h6>
+                  <h4 className="mb-0">{formatCurrency(stats.todaySales - todaysExpenses)}</h4>
                 </div>
               </div>
             </div>
@@ -420,6 +503,8 @@ function Dashboard() {
           setShowAddCategory={setExpenseShowAddCategory}
           addCategory={handleExpenseAddCategory}
           t={t}
+          onCancel={() => setShowExpenseModal(false)}
+          onPrint={handleExpenseSaveAndPrint}
         />
       </Modal>
       {/* Expense Toast */}

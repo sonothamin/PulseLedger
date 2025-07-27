@@ -14,7 +14,9 @@ export default function ExpenseForm({
   addCategory,
   t,
   hideSubmitButton,
-  id
+  id,
+  onCancel,
+  onPrint
 }) {
   return (
     <form onSubmit={onSubmit} autoComplete="off" id={id}>
@@ -116,7 +118,9 @@ export default function ExpenseForm({
       </div>
       {!hideSubmitButton && (
         <div className="d-flex justify-content-end gap-2">
+          <button type="button" className="btn btn-secondary" onClick={onCancel}>{t('cancel') || 'Cancel'}</button>
           <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? t('saving') : t('save')}</button>
+          <button type="button" className="btn btn-success" disabled={saving} onClick={onPrint}>{t('printAndSave') || 'Save and Print'}</button>
         </div>
       )}
     </form>

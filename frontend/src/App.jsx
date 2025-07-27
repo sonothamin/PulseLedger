@@ -1,128 +1,48 @@
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom'
 import { Dashboard, POS, Sales, Expenses, Products, Users, Roles, Patients, Settings, SalesAgents, Invoice as InvoicePage, Accounts, AuditLogs } from './pages'
-import { House, CashStack, Receipt as Invoice, CreditCard, BoxSeam, People, ShieldLock, Gear, List, SunFill, MoonFill, LaptopFill, PersonHeart, PersonBadge, PersonCircle, Key, BarChart, JournalText, Envelope, BoxArrowRight } from 'react-bootstrap-icons'
-import { AuthProvider, useAuth } from './context/AuthContext'
+import { House, CashStack, Receipt as Invoice, CreditCard, BoxSeam, People, ShieldLock, Gear, List, SunFill, MoonFill, LaptopFill, PersonHeart, PersonBadge, BarChart, JournalText, Key, Envelope, BoxArrowRight, ExclamationTriangle } from 'react-bootstrap-icons'
+import { AuthProvider } from './context/AuthContext'
+import { useAuth } from './context/AuthHelpers'
 import Login from './pages/Login'
 import axios from 'axios'
 import { useTranslations } from './hooks/useTranslations'
 import PageTitle from './components/PageTitle'
-import useBranding from './hooks/useBranding'
+import useTheme from './hooks/useTheme';
+import getThemeOptions from './hooks/useThemeOptions';
+import logo from './assets/logo.png';
+import NoAccess from './pages/NoAccess';
+import Toast from './components/Toast';
+import { GlobalNavigateSetter } from './main';
+import Sidebar from './components/Sidebar.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import useBranding from './hooks/useBranding';
+import Report from './pages/Report';
 
-const API_BASE = import.meta.env.VITE_API_BASE;
+// Update defaultRoutes to match canonical keys
+const defaultRoutes = [
+  { path: '/dashboard', permission: 'dashboard:view' },
+  { path: '/pos', permission: 'pos:view' },
+  { path: '/sales', permission: 'sale:read' },
+  { path: '/expenses', permission: 'expense:read' },
+  { path: '/products', permission: 'product:read' },
+  { path: '/accounts', permission: 'account:read' },
+  { path: '/patients', permission: 'patient:read' },
+  { path: '/users', permission: 'user:read' },
+  { path: '/roles', permission: 'role:read' },
+  { path: '/settings', permission: 'settings:read' },
+];
 
-function getThemeOptions(t) {
-  return [
-    { value: 'system', label: t('themeSystem'), icon: <LaptopFill /> },
-    { value: 'light', label: t('themeLight'), icon: <SunFill /> },
-    { value: 'dark', label: t('themeDark'), icon: <MoonFill /> },
-  ];
-}
-
-// Create context for theme
-const AppContext = createContext()
-
-export function useApp() {
-  return useContext(AppContext)
-}
-
-function useTheme() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system')
-
-  useEffect(() => {
-    const applyTheme = t => {
-      if (t === 'system') {
-        const mq = window.matchMedia('(prefers-color-scheme: dark)')
-        document.documentElement.setAttribute('data-bs-theme', mq.matches ? 'dark' : 'light')
-      } else {
-        document.documentElement.setAttribute('data-bs-theme', t)
-      }
-    }
-    applyTheme(theme)
-    if (theme === 'system') {
-      const mq = window.matchMedia('(prefers-color-scheme: dark)')
-      const handler = e => applyTheme('system')
-      mq.addEventListener('change', handler)
-      return () => mq.removeEventListener('change', handler)
-    }
-  }, [theme])
-
-  const setAndStoreTheme = t => {
-    setTheme(t)
-    localStorage.setItem('theme', t)
-  }
-  return [theme, setAndStoreTheme]
-}
-
-function Sidebar({ collapsed, onToggle }) {
-  const location = useLocation()
-  const { t } = useTranslations()
-  const { user, hasAnyPermission } = useAuth()
-  
-  const navItems = [
-    { to: '/', label: t('dashboard'), icon: <House />, permission: 'dashboard:view' },
-    { to: '/pos', label: t('pos'), icon: <CashStack />, permission: 'pos:view' },
-    { to: '/sales', label: t('sales'), icon: <Invoice />, permission: 'sales:view' },
-    { to: '/expenses', label: t('expenses'), icon: <CreditCard />, permission: 'expenses:view' },
-    { to: '/products', label: t('products'), icon: <BoxSeam />, permission: 'products:view' },
-    { to: '/accounts', label: t('accounts'), icon: <BarChart />, permission: 'accounts:view' },
-    { to: '/audit-logs', label: t('auditLogs'), icon: <JournalText />, permission: 'audit:view' },
-    { to: '/sales-agents', label: t('salesAgentsTitle') || 'Sales Agents', icon: <PersonBadge />, permission: 'sales_agents:view' },
-    { to: '/patients', label: t('patients'), icon: <PersonHeart />, permission: 'patients:view' },
-    { to: '/users', label: t('userManagement'), icon: <People />, permission: 'users:view' },
-    { to: '/roles', label: t('roleManagement'), icon: <ShieldLock />, permission: 'roles:view' },
-    { to: '/settings', label: t('settings'), icon: <Gear />, permissions: ['settings:view', 'settings:read'] },
-  ]
-  
-  // Filter nav items based on user permissions
-  const visibleNavItems = navItems.filter(item => {
-    if (!user || !user.permissions) return false;
-    if (user.permissions.includes('*')) return true; // Super admin sees all
-    
-    // Handle both single permission strings and arrays of permissions
-    const requiredPermissions = item.permissions || [item.permission];
-    return hasAnyPermission(requiredPermissions);
-  });
-  return (
-    <nav className={`bg-body border-end d-flex flex-column p-2 position-relative ${collapsed ? 'sidebar-collapsed' : ''}`} style={{ width: collapsed ? 64 : 220, minHeight: '100vh', transition: 'width 0.2s' }} role="navigation" aria-label="Main sidebar navigation">
-      <div className="d-flex align-items-center mb-3 justify-content-between" style={{ flexDirection: 'row', gap: 12 }}>
-        <Link to="/" className={`mb-0 fw-bold flex-grow-1 ${collapsed ? 'd-none' : ''} text-decoration-none text-reset`} style={{ transition: 'opacity 0.2s', paddingLeft: 12, fontSize: 24 }} aria-label="Go to Dashboard">
-          PulseLedger
-        </Link>
-        <button className="btn btn-link text-secondary align-self-center" onClick={onToggle} title={collapsed ? t('expandSidebar') : t('collapseSidebar')} aria-label={collapsed ? t('expandSidebar') : t('collapseSidebar')} aria-pressed={!collapsed} style={{ fontSize: 24 }}>
-          <List />
-        </button>
-      </div>
-      <ul className="nav flex-column gap-1">
-        {visibleNavItems.map(({ to, label, icon }) => (
-          <li className="nav-item" key={to}>
-            <Link className={`nav-link d-flex align-items-center gap-2 rounded ${location.pathname === to ? 'active bg-primary text-white' : 'text-body'}`} to={to} style={{ minHeight: 40 }}
-              aria-current={location.pathname === to ? 'page' : undefined}>
-              <span style={{ fontSize: 20 }}>{icon}</span>
-              <span className={collapsed ? 'd-none' : ''}>{label}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-auto pb-2">
-        <div className="small text-center text-secondary" style={{ fontSize: collapsed ? 10 : 12 }}>
-          {collapsed ? 'v1.0' : 'PulseLedger v1.0'}
-        </div>
-      </div>
-    </nav>
-  )
-}
-
-function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth()
-  if (loading) return <div className="d-flex justify-content-center align-items-center min-vh-100"><div className="spinner-border" /></div>
-  if (!user) return <Navigate to="/login" replace />
-  return children
+function getFirstAllowedRoute(user, hasAnyPermission) {
+  if (!user || !user.permissions) return '/login';
+  if (user.permissions.includes('*')) return '/dashboard';
+  const found = defaultRoutes.find(route => hasAnyPermission([route.permission]));
+  return found ? found.path : '/no-access';
 }
 
 function AppShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const { user, logout } = useAuth()
+  const { user, logout, hasAnyPermission, error, resetError } = useAuth()
   const [theme, setTheme] = useTheme()
   const { branding, loading: brandingLoading } = useBranding()
   const { t, currentLanguage } = useTranslations()
@@ -131,10 +51,26 @@ function AppShell() {
   useEffect(() => {
     document.documentElement.lang = currentLanguage || 'en';
   }, [currentLanguage]);
-  
+  useEffect(() => {
+    if (user) {
+      console.log('[AppShell] User permissions:', user?.permissions);
+      const firstRoute = getFirstAllowedRoute(user, hasAnyPermission);
+      console.log('[AppShell] First allowed route:', firstRoute);
+      // If on root or forbidden page, redirect to first allowed
+      if (window.location.pathname === '/' || window.location.pathname === '/dashboard' || window.location.pathname === '/no-access') {
+        navigate(firstRoute, { replace: true });
+      }
+    }
+  }, [user, hasAnyPermission, navigate]);
   return (
-    <AppContext.Provider value={{ theme, setTheme }}>
+    <>
       <PageTitle />
+      {/* Global error toast */}
+      {error && (
+        <Toast message={error} type="error" onClose={resetError} />
+      )}
+      {/* Set global navigate for toast-based redirects */}
+      <GlobalNavigateSetter navigate={navigate} />
       <div style={{ height: '100vh', width: '100vw', overflow: 'hidden', position: 'relative' }}>
         {/* Sidebar */}
         <div style={{ position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 1040, width: sidebarCollapsed ? 64 : 220, transition: 'width 0.2s', background: 'var(--bs-body-bg, #f8fafc)' }}>
@@ -165,14 +101,14 @@ function AppShell() {
             <div className="d-flex align-items-center ms-auto gap-3">
               <div className="dropdown">
                 <button className="btn btn-outline-primary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" id="themeDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="listbox" style={{ marginRight: 5 }}>
-                  {THEMES.find(opt => opt.value === theme)?.icon}
+                  {(() => { const Icon = THEMES.find(opt => opt.value === theme)?.icon; return Icon ? <Icon /> : null; })()}
                   <span className="d-none d-md-inline">{THEMES.find(opt => opt.value === theme)?.label}</span>
                 </button>
                 <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="themeDropdown" role="menu">
                   {THEMES.map(opt => (
                     <li key={opt.value}>
                       <button className={`dropdown-item d-flex align-items-center gap-2${theme === opt.value ? ' active' : ''}`} type="button" onClick={() => setTheme(opt.value)} role="menuitem">
-                        {opt.icon} {opt.label}
+                        <opt.icon /> {opt.label}
                       </button>
                     </li>
                   ))}
@@ -326,98 +262,85 @@ function AppShell() {
         <div style={{ position: 'absolute', left: sidebarCollapsed ? 64 : 220, top: 64, right: 0, bottom: 0, overflow: 'auto', background: 'var(--bs-body-bg, #f8fafc)' }}>
           <main style={{ minHeight: 0, height: '100%', padding: '2rem', boxSizing: 'border-box' }}>
             <Routes>
-              <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/pos" element={<ProtectedRoute><POS /></ProtectedRoute>} />
-              <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
-              <Route path="/sales-agents" element={<ProtectedRoute><SalesAgents /></ProtectedRoute>} />
-              <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
-              <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
-              <Route path="/patients" element={<ProtectedRoute><Patients /></ProtectedRoute>} />
-              <Route path="/accounts" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<ProtectedRoute permission="dashboard:view"><Dashboard /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute permission="dashboard:view"><Dashboard /></ProtectedRoute>} />
+              <Route path="/pos" element={<ProtectedRoute permission="pos:view"><POS /></ProtectedRoute>} />
+              <Route path="/sales" element={<ProtectedRoute permission="sale:read"><Sales /></ProtectedRoute>} />
+              <Route path="/sales-agents" element={<ProtectedRoute permission="salesAgent:read"><SalesAgents /></ProtectedRoute>} />
+              <Route path="/expenses" element={<ProtectedRoute permission="expense:read"><Expenses /></ProtectedRoute>} />
+              <Route path="/products" element={<ProtectedRoute permission="product:read"><Products /></ProtectedRoute>} />
+              <Route path="/patients" element={<ProtectedRoute permission="patient:read"><Patients /></ProtectedRoute>} />
+              <Route path="/accounts" element={<ProtectedRoute permission="account:manage"><Accounts /></ProtectedRoute>} />
               <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
-              <Route path="/roles" element={<ProtectedRoute><Roles /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              <Route path="/audit-logs" element={<ProtectedRoute><AuditLogs /></ProtectedRoute>} />
-              <Route path="/invoice/:id" element={<ProtectedRoute><InvoicePage /></ProtectedRoute>} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="/roles" element={<ProtectedRoute permission="role:read"><Roles /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute permission="settings:read"><Settings /></ProtectedRoute>} />
+              <Route path="/audit-logs" element={<ProtectedRoute permission="auditLog:read"><AuditLogs /></ProtectedRoute>} />
+              <Route path="/invoice/:id" element={<ProtectedRoute permission="sale:read"><InvoicePage /></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute permission="report:read"><Report /></ProtectedRoute>} />
+              <Route path="/no-access" element={<NoAccess />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
         </div>
       </div>
-    </AppContext.Provider>
+    </>
   )
 }
 
 function Root() {
-  const { user, login, loading } = useAuth()
+  const { user, login, loading, refreshFailed } = useAuth();
 
   // Enhanced login: after login, fetch branding and store in localStorage
   const loginWithBranding = async (username, password) => {
-    try {
-      await login(username, password)
-    } catch (err) {
-      throw err
-    }
+    await login(username, password)
     try {
       const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
       const res = await axios.get(`${API_BASE}/api/settings`)
-      const brandingSetting = res.data.find(s => s.key === 'branding')
+      let brandingSetting = null;
+      if (Array.isArray(res.data)) {
+        brandingSetting = res.data.find(s => s.key === 'branding');
+      } else {
+        console.warn('[Root] /api/settings did not return an array:', res.data);
+      }
       if (brandingSetting?.value) {
         localStorage.setItem('branding', JSON.stringify(brandingSetting.value))
       }
-    } catch (err) {
+    } catch {
       // fallback: clear branding if fetch fails
       localStorage.removeItem('branding')
     }
   }
 
-  if (loading) return <div className="d-flex justify-content-center align-items-center min-vh-100"><div className="spinner-border" /></div>
-  return user ? <AppShell /> : <Login onLogin={loginWithBranding} />
+  if (loading) return <div className="d-flex justify-content-center align-items-center min-vh-100"><div className="spinner-border" /></div>;
+  // If refreshFailed and not logged in, just show login form (no redirect)
+  if (refreshFailed && !user) return <Login onLogin={loginWithBranding} />;
+  return user ? <AppShell /> : <Login onLogin={loginWithBranding} />;
 }
 
 function App() {
   return (
     <AuthProvider>
-      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Router>
         <Root />
-        <style>{`
-          .sidebar-collapsed .nav-link span:last-child { display: none !important; }
-          .sidebar-collapsed h4 { display: none !important; }
-          .sidebar-collapsed { width: 64px !important; }
-          .nav-link.active { font-weight: 600; }
-          
-          /* Header and User Menu Styles */
-          .navbar-brand {
-            font-size: 1.25rem;
-            font-weight: 700;
-          }
-          
-          .dropdown-menu {
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            border: 1px solid rgba(0,0,0,0.08);
-          }
-          
-          .btn-link.nav-link:hover {
-            background-color: rgba(0,0,0,0.05);
-          }
-          
-          [data-bs-theme="dark"] .btn-link.nav-link:hover {
-            background-color: rgba(255,255,255,0.1);
-          }
-          
-          /* Responsive adjustments */
-          @media (max-width: 768px) {
-            .sidebar-collapsed, nav.bg-light { width: 0 !important; min-width: 0 !important; overflow: hidden; }
-            .navbar-brand { font-size: 1.1rem; }
-          }
-          
-          @media (max-width: 576px) {
-            .navbar-brand { font-size: 1rem; }
-          }
-        `}</style>
       </Router>
     </AuthProvider>
   )
 }
 
 export default App
+
+// Add NotFound component
+function NotFound() {
+  return (
+    <div className="d-flex flex-column align-items-center justify-content-center min-vh-100 text-center bg-body-tertiary">
+      <div className="mb-4">
+        <ExclamationTriangle size={64} className="text-warning mb-3" />
+        <h1 className="display-4 fw-bold">404</h1>
+        <h2 className="mb-3">Page Not Found</h2>
+        <p className="lead text-muted mb-4">Sorry, the page you are looking for does not exist or has been moved.</p>
+        <a href="/" className="btn btn-primary btn-lg px-4">Go to Dashboard</a>
+      </div>
+    </div>
+  );
+}

@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
 import { Globe, Building, CurrencyDollar, Check, Upload, X, InfoCircle, Image, CheckCircleFill, FileEarmarkText, ArrowUpCircle, Hospital, Quote, Lightbulb, GeoAlt, Map, Telephone, Phone, Envelope, Facebook, Translate, Calendar3, CalendarCheck, Clock, ClockHistory, CurrencyExchange, CodeSlash, CardText, ArrowLeftRight } from 'react-bootstrap-icons'
 
 import { useTranslations } from '../hooks/useTranslations'
+import { useAuth } from '../context/AuthHelpers'
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
@@ -25,23 +26,32 @@ function Settings() {
   // Ref for TimezoneSelector
   const timezoneRef = useRef()
 
+  const { user } = useAuth();
+
+  // Add state for backup/restore
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [restoreFile, setRestoreFile] = useState(null);
+
   const fetchSettings = async () => {
     setLoading(true)
     try {
-      const res = await axios.get(`${API_BASE}/api/settings`)
+      const response = await axios.get(`${API_BASE}/api/settings`)
       const settingsMap = {}
-      res.data.forEach(setting => {
+      response.data.forEach(setting => {
         settingsMap[setting.key] = setting
       })
       setSettings(settingsMap)
-    } catch (err) {
-      console.error('Failed to load settings:', err)
+    } catch {
+      // ignore
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { fetchSettings() }, [])
+  useEffect(() => {
+    if (user) fetchSettings();
+  }, [user]);
 
   // Cleanup object URL when component unmounts or pending file changes
   useEffect(() => {
@@ -74,8 +84,7 @@ function Settings() {
         await fetchSettings()
         setToast(t('settingsSaved'))
       }
-    } catch (err) {
-      console.error('Error updating setting:', err)
+    } catch {
       setToast(t('settingsError'))
     } finally {
       setSaving(false)
@@ -109,16 +118,20 @@ function Settings() {
       const file = pendingLogoFile;
       const formData = new FormData();
       formData.append('logo', file);
+      // Send old logo path for deletion if it exists and is not default
+      const current = settings.branding?.value || {};
+      if (current.logo && current.logo.startsWith('/uploads/')) {
+        formData.append('oldLogo', current.logo);
+      }
       try {
         const response = await axios.post('/api/settings/upload-logo', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-        const current = settings.branding?.value || {};
         brandingWithLogo = { ...current, ...pendingChanges.branding, logo: response.data.logoUrl };
         // Save branding with new logo
         await updateSetting('branding', brandingWithLogo);
         brandingChanged = true;
-      } catch (error) {
+      } catch {
         setToast(t('failedToUploadLogo'));
         return;
       }
@@ -215,26 +228,84 @@ function Settings() {
     setHasUnsavedChanges(true)
   }
 
+  // Backup download handler
+  const handleBackupDownload = async () => {
+    setBackupLoading(true);
+    try {
+      const response = await axios.get(`${API_BASE}/api/backup`, {
+        responseType: 'blob',
+        withCredentials: true,
+      });
+      // Generate filename with current date and time
+      const now = new Date();
+      const pad = n => n.toString().padStart(2, '0');
+      const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+      const filename = `backup-${dateStr}.enc`;
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      setToast(t('backupDownloaded') || 'Backup downloaded successfully.');
+    } catch {
+      setToast(t('backupDownloadError') || 'Failed to download backup.');
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
+  // Restore upload handler
+  const handleRestoreUpload = async () => {
+    if (!restoreFile) {
+      setToast(t('selectBackupFile') || 'Please select a backup file.');
+      return;
+    }
+    if (!window.confirm(t('confirmRestore') || 'Restoring will overwrite all data. Continue?')) return;
+    setRestoreLoading(true);
+    try {
+      await axios.post(
+        `${API_BASE}/api/backup/restore`,
+        restoreFile,
+        {
+          headers: { 'Content-Type': 'application/octet-stream' },
+          withCredentials: true,
+        }
+      );
+      setToast(t('restoreSuccess') || 'Database restored successfully.');
+    } catch {
+      setToast(t('restoreError') || 'Failed to restore database.');
+    } finally {
+      setRestoreLoading(false);
+      setRestoreFile(null);
+    }
+  };
+
   const tabs = [
     { id: 'localization', label: t('localization'), icon: <Globe /> },
     { id: 'branding', label: t('branding'), icon: <Building /> },
-    { id: 'currency', label: t('currency'), icon: <CurrencyDollar /> }
+    { id: 'currency', label: t('currency'), icon: <CurrencyDollar /> },
+    // Add Backup tab if user has permission
+    ...(
+      user?.permissions?.includes('backup:read') ||
+      user?.permissions?.includes('backup:download') ||
+      user?.permissions?.includes('backup:restore') ||
+      user?.permissions?.includes('*')
+        ? [{ id: 'backup', label: t('backupRestore') || 'Backup & Restore', icon: <ArrowUpCircle /> }]
+        : []
+    )
   ]
 
   const localization = pendingChanges.localization || settings.localization?.value || {}
-  const branding = { ...settings.branding?.value, ...pendingChanges.branding } || {}
-  const currency = pendingChanges.currency || settings.currency?.value || {}
+  const branding = { ...settings.branding?.value, ...pendingChanges.branding }
+  const currency = pendingChanges.currency ? pendingChanges.currency : (settings.currency && settings.currency.value ? settings.currency.value : {})
 
   // Handle logo source with proper fallback
   const rawLogoSrc = branding.logo || settings.branding?.value?.logo || null;
   const logoSrc = rawLogoSrc?.startsWith('/uploads/') 
     ? `${API_BASE}${rawLogoSrc}` 
     : rawLogoSrc;
-
-  // Helper for merging settings
-  function mergeSettings(original, pending) {
-    return { ...original, ...pending };
-  }
 
   if (loading) {
     return (
@@ -727,6 +798,79 @@ function Settings() {
                         <InfoCircle className="me-1" />
                         {t('currencyPositionHelp')}
                       </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Backup & Restore Settings */}
+        {activeTab === 'backup' && (
+          <div className="card">
+            <div className="card-header">
+              <div className="d-flex align-items-center gap-2">
+                <ArrowUpCircle className="text-primary" />
+                <h5 className="mb-0">{t('backupRestore') || 'Backup & Restore'}</h5>
+              </div>
+              <p className="text-muted mb-0 small">
+                <InfoCircle className="me-1" />
+                {t('backupRestoreHelp') || 'Download a full encrypted backup or restore from a backup file.'}
+              </p>
+            </div>
+            <div className="card-body">
+              <div className="row g-4">
+                <div className="col-md-6">
+                  <div className="border rounded p-4 bg-body-tertiary h-100 d-flex flex-column justify-content-between">
+                    <h6 className="mb-3 d-flex align-items-center gap-2">
+                      <ArrowUpCircle className="text-primary" />
+                      {t('downloadBackup') || 'Download Backup'}
+                    </h6>
+                    <div className="input-group mb-2">
+                      <button
+                        className="btn btn-outline-primary w-100 d-flex align-items-center gap-2"
+                        onClick={handleBackupDownload}
+                        disabled={backupLoading}
+                        type="button"
+                      >
+                        {backupLoading ? <span className="spinner-border spinner-border-sm" /> : <ArrowUpCircle />}
+                        {t('downloadBackup') || 'Download Backup'}
+                      </button>
+                    </div>
+                    <div className="form-text">
+                      <InfoCircle className="me-1" />
+                      {t('backupEncryptedInfo') || 'Backup is encrypted and can only be restored on this system.'}
+                    </div>
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="border rounded p-4 bg-body-tertiary h-100 d-flex flex-column justify-content-between">
+                    <h6 className="mb-3 d-flex align-items-center gap-2">
+                      <Upload className="text-primary" />
+                      {t('restoreBackup') || 'Restore Backup'}
+                    </h6>
+                    <div className="input-group mb-2">
+                      <input
+                        type="file"
+                        className="form-control"
+                        accept=".enc,application/octet-stream"
+                        onChange={e => setRestoreFile(e.target.files[0])}
+                        disabled={restoreLoading}
+                      />
+                      <button
+                        className="btn btn-outline-danger d-flex align-items-center gap-2"
+                        onClick={handleRestoreUpload}
+                        disabled={restoreLoading || !restoreFile}
+                        type="button"
+                      >
+                        {restoreLoading ? <span className="spinner-border spinner-border-sm" /> : <Upload />}
+                        {t('restore') || 'Restore'}
+                      </button>
+                    </div>
+                    <div className="form-text">
+                      <InfoCircle className="me-1" />
+                      {t('restoreWarning') || 'Restoring will overwrite all current data. Use with caution.'}
                     </div>
                   </div>
                 </div>

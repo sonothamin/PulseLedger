@@ -1,5 +1,5 @@
 import React from 'react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useTranslations } from '../hooks/useTranslations'
 import { useCurrency } from '../hooks/useCurrency'
 import axios from 'axios'
@@ -22,28 +22,31 @@ import InvoicePage from './Invoice'
 import { createRoot } from 'react-dom/client'
 import POS from './POS'
 import { Modal } from 'react-bootstrap'
+import Toast from '../components/Toast';
 
 function Sales() {
+  // All hooks are already at the top of the component, before any early returns or conditional logic.
+  // No further changes needed for hook placement.
   const [sales, setSales] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedStatus, setSelectedStatus] = useState('')
-  const { t } = useTranslations()
-  const { formatCurrency } = useCurrency()
+  const [selectedAgent, setSelectedAgent] = useState('')
+  const [selectedCashier, setSelectedCashier] = useState('')
+  const [settings, setSettings] = useState({})
+  const [toast, setToast] = useState({ message: '', type: 'error' });
+  const [dateRange, setDateRange] = useState('today')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [sortBy, setSortBy] = useState('id')
+  const [sortDir, setSortDir] = useState('desc')
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingSale, setEditingSale] = useState(null)
   const [showViewModal, setShowViewModal] = useState(false)
   const [viewingSale, setViewingSale] = useState(null)
-  const [sortBy, setSortBy] = useState('id')
-  const [sortDir, setSortDir] = useState('desc')
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
-  const [dateRange, setDateRange] = useState('')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [selectedAgent, setSelectedAgent] = useState('')
-  const [selectedCashier, setSelectedCashier] = useState('')
-  const [settings, setSettings] = useState({})
+  const { t } = useTranslations()
+  const { formatCurrency } = useCurrency()
 
   useEffect(() => {
     const fetchSales = async () => {
@@ -72,7 +75,7 @@ function Sales() {
           settingsMap[setting.key] = setting
         })
         setSettings(settingsMap)
-      } catch (err) {
+      } catch {
         // ignore
       }
     }
@@ -188,15 +191,15 @@ function Sales() {
       await axios.put(`${API_BASE}/api/sales/${updatedSale.id}`, updatedSale)
       try {
         await axios.post(`${API_BASE}/api/sales/${updatedSale.id}/recalculate`)
-      } catch (err) {
-        alert('Failed to recalculate sale total. Please check the invoice carefully.')
+      } catch {
+        setToast({ message: 'Failed to recalculate sale total. Please check the invoice carefully.', type: 'error' });
       }
       const fresh = await axios.get(`${API_BASE}/api/sales/${updatedSale.id}`)
       setSales(sales => sales.map(s => s.id === updatedSale.id ? fresh.data : s))
       setShowEditModal(false)
       setEditingSale(null)
-    } catch (err) {
-      alert('Failed to update sale')
+    } catch {
+      setToast({ message: 'Failed to update sale', type: 'error' });
     }
   }
 
@@ -215,13 +218,13 @@ function Sales() {
     try {
       await axios.delete(`${API_BASE}/api/sales/${sale.id}`);
       setSales(sales => sales.filter(s => s.id !== sale.id));
-    } catch (err) {
-      alert(t('deleteFailed') || 'Failed to delete sale.');
+    } catch {
+      setToast({ message: t('deleteFailed') || 'Failed to delete sale.', type: 'error' });
     }
   }
 
   // Helper to get date range for a preset
-  const getDateRangeForRange = (range) => {
+  const getDateRangeForRange = useCallback((range) => {
     const now = new Date()
     const today = now.toISOString().split('T')[0]
     if (range === 'this-week') {
@@ -245,7 +248,7 @@ function Sales() {
       return { startDate: fromDate, endDate: today }
     }
     return { startDate, endDate }
-  }
+  }, [startDate, endDate])
 
   // When dateRange changes, update start/end unless custom
   useEffect(() => {
@@ -254,7 +257,17 @@ function Sales() {
       setStartDate(s)
       setEndDate(e)
     }
-  }, [dateRange])
+  }, [dateRange, getDateRangeForRange])
+
+  // Helper to format date as dd/mm/yyyy
+  function formatDateDMY(dateString) {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  }
 
   if (loading) {
     return (
@@ -279,6 +292,9 @@ function Sales() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {toast.message && (
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast({ message: '', type: 'error' })} />
+      )}
       <div className="d-flex justify-content-between align-items-center mb-4" style={{ flex: '0 0 auto' }}>
         <h2>{t('salesTitle')}</h2>
         <button className="btn btn-primary d-flex align-items-center gap-2">
@@ -286,8 +302,8 @@ function Sales() {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="card mb-4 shadow-sm border bg-body rounded-3" style={{ flex: '0 0 auto' }}>
+      {/* Filters & Summary */}
+      <div className="card mb-4 shadow-sm border bg-body rounded-3">
         <div className="card-header d-flex flex-wrap align-items-center gap-2 border-bottom-0 rounded-top-3">
           <div className="input-group input-group-sm w-auto flex-grow-1" style={{ maxWidth: 320 }}>
             <span className="input-group-text bg-transparent border-end-0"><Search /></span>
@@ -300,15 +316,34 @@ function Sales() {
               style={{ minWidth: 0 }}
             />
           </div>
-          <button
-            className="btn btn-primary btn-sm d-flex align-items-center gap-2"
-            type="button"
-            onClick={() => setShowAdvancedFilters(f => !f)}
-            aria-expanded={showAdvancedFilters}
-            aria-controls="sales-advanced-filters"
-          >
-            <Filter /> {t('filter')}
-          </button>
+          <span className="badge bg-primary text-light fs-6 ms-2">{t('total')}: {formatCurrency(sortedSales.reduce((sum, sale) => sum + (sale.total || 0), 0))}</span>
+          <span className="badge bg-secondary text-light fs-6 ms-1">{t('count')}: {sortedSales.length}</span>
+          <span className="badge bg-warning text-dark fs-6 ms-1">{t('totalDiscounts')}: {formatCurrency(sortedSales.reduce((sum, sale) => sum + (sale.discountType === 'percent' ? (sale.total * (sale.discount || 0) / 100) : (sale.discount || 0)), 0))}</span>
+          <div className="ms-auto d-flex align-items-center gap-2">
+            <span className="text-muted small ms-2">
+              {t('showing') || 'Showing'}: {(() => {
+                switch (dateRange) {
+                  case 'today': return t('accountsToday') || 'Today';
+                  case 'this-week': return t('accountsThisWeek') || 'This Week';
+                  case 'this-month': return t('accountsThisMonth') || 'This Month';
+                  case 'all':
+                  case '':
+                    return t('allDates') || 'All Dates';
+                  case 'custom': return `${startDate && formatDateDMY(startDate)} - ${endDate && formatDateDMY(endDate)}`;
+                  default: return dateRange;
+                }
+              })()}
+            </span>
+            <button
+              className="btn btn-primary btn-sm d-flex align-items-center gap-2"
+              type="button"
+              onClick={() => setShowAdvancedFilters(f => !f)}
+              aria-expanded={showAdvancedFilters}
+              aria-controls="sales-advanced-filters"
+            >
+              <Filter /> {t('filter')}
+            </button>
+          </div>
         </div>
         <div className={`collapse${showAdvancedFilters ? ' show' : ''}`} id="sales-advanced-filters">
           <div className="card-body pt-3 pb-2 bg-body-tertiary border-top rounded-bottom-3">
@@ -318,7 +353,14 @@ function Sales() {
                 <label className="form-label mb-1">{t('saleDate')}</label>
                 <div className="input-group input-group-sm flex-nowrap">
                   <span className="input-group-text bg-transparent border-end-0"><CalendarRange size={18} /></span>
-                  <select className="form-select form-select-sm border-start-0" value={dateRange} onChange={e => setDateRange(e.target.value)}>
+                  <select className="form-select form-select-sm border-start-0" value={dateRange} onChange={e => {
+                    const val = e.target.value;
+                    setDateRange(val);
+                    if (val === 'all' || val === '') {
+                      setStartDate('');
+                      setEndDate('');
+                    }
+                  }}>
                     <option value="">{t('allDates') || 'All Dates'}</option>
                     <option value="this-week">{t('accountsThisWeek') || 'This Week'}</option>
                     <option value="this-month">{t('accountsThisMonth') || 'This Month'}</option>
@@ -374,12 +416,14 @@ function Sales() {
                     <th style={{ cursor: 'pointer' }} onClick={() => handleSort('customer')}>
                       {t('customer')} {sortBy === 'customer' && (sortDir === 'asc' ? '▲' : '▼')}
                     </th>
+                    <th className="text-center">{t('items') || 'Items'}</th>
                     <th style={{ cursor: 'pointer' }} onClick={() => handleSort('cashier')}>
                       {t('cashier')} {sortBy === 'cashier' && (sortDir === 'asc' ? '▲' : '▼')}
                     </th>
                     <th className="text-end" style={{ cursor: 'pointer' }} onClick={() => handleSort('amount')}>
                       {t('amount')} {sortBy === 'amount' && (sortDir === 'asc' ? '▲' : '▼')}
                     </th>
+                    <th className="text-end">{t('discount')}</th>
                     <th className="text-center">{t('paymentStatus')}</th>
                     <th className="text-center" style={{ cursor: 'pointer' }} onClick={() => handleSort('date')}>
                       {t('saleDate')} {sortBy === 'date' && (sortDir === 'asc' ? '▲' : '▼')}
@@ -400,6 +444,7 @@ function Sales() {
                           {sale.Patient?.name || ''}
                         </div>
                       </td>
+                      <td className="text-center">{Array.isArray(sale.SaleItems) ? sale.SaleItems.length : 0}</td>
                       <td>
                         <div className="d-flex align-items-center gap-2">
                           <Person className="text-muted" />
@@ -410,6 +455,9 @@ function Sales() {
                         <div className="d-flex align-items-center justify-content-end gap-1">
                           <span className="fw-semibold">{formatCurrency(sale.total)}</span>
                         </div>
+                      </td>
+                      <td className="text-end">
+                        {formatCurrency(sale.discountType === 'percent' ? (sale.total * (sale.discount || 0) / 100) : (sale.discount || 0))}
                       </td>
                       <td className="text-center">
                         {getStatusBadge('paid')}
@@ -459,42 +507,6 @@ function Sales() {
               </table>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="row g-2 mt-1" style={{ flex: '0 0 auto', marginBottom: 4 }}>
-        <div className="col-md-3">
-          <div className="card border-0 shadow-sm" style={{ minHeight: 60, padding: 0 }}>
-            <div className="card-body text-center py-2 px-1" style={{ padding: '8px 4px' }}>
-              <h4 className="text-primary mb-1" style={{ fontSize: 20 }}>{sortedSales.length}</h4>
-              <p className="text-muted mb-0" style={{ fontSize: 13 }}>{t('totalSales')}</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card border-0 shadow-sm" style={{ minHeight: 60, padding: 0 }}>
-            <div className="card-body text-center py-2 px-1" style={{ padding: '8px 4px' }}>
-              <h4 className="text-success mb-1" style={{ fontSize: 20 }}>{formatCurrency(sortedSales.reduce((sum, sale) => sum + sale.total, 0))}</h4>
-              <p className="text-muted mb-0" style={{ fontSize: 13 }}>{t('totalAmount')}</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card border-0 shadow-sm" style={{ minHeight: 60, padding: 0 }}>
-            <div className="card-body text-center py-2 px-1" style={{ padding: '8px 4px' }}>
-              <h4 className="text-info mb-1" style={{ fontSize: 20 }}>{sortedSales.length}</h4>
-              <p className="text-muted mb-0" style={{ fontSize: 13 }}>{t('completedSales')}</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card border-0 shadow-sm" style={{ minHeight: 60, padding: 0 }}>
-            <div className="card-body text-center py-2 px-1" style={{ padding: '8px 4px' }}>
-              <h4 className="text-warning mb-1" style={{ fontSize: 20 }}>{sortedSales.reduce((sum, sale) => sum + (sale.discount || 0), 0).toLocaleString()}</h4>
-              <p className="text-muted mb-0" style={{ fontSize: 13 }}>{t('totalDiscounts')}</p>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -644,9 +656,9 @@ function EditSaleModal({ sale, onClose, onSave }) {
 }
 
 function ViewSaleModal({ sale, onClose }) {
-  if (!sale) return null;
   const { t } = useTranslations()
   const { formatCurrency } = useCurrency()
+  if (!sale) return null;
   // Group items: parentId = null are parents, others are supplementary
   const parents = Array.isArray(sale.SaleItems) ? sale.SaleItems.filter(i => !i.supplementaryParentId) : [];
   const getSupps = (parentId) => Array.isArray(sale.SaleItems) ? sale.SaleItems.filter(i => i.supplementaryParentId === parentId) : [];

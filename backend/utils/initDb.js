@@ -27,6 +27,57 @@ async function initDb() {
       console.log(`Default admin user created. Username: admin, Password: ${defaultPassword}`);
     }
     
+    // Ensure default roles exist
+    const rolesToCreate = [
+      {
+        name: 'admin',
+        description: 'Administrator',
+        permissions: ['*']
+      },
+      {
+        name: 'cashier',
+        description: 'Cashier',
+        permissions: [
+          'dashboard:view', 'pos:view', 'sale:read', 'sale:create',
+          'expense:read', 'expense:create', 'product:read', 'patient:read',
+          'user:read', 'report:read', 'salesAgent:read', 'expenseCategory:read'
+        ]
+      },
+      {
+        name: 'manager',
+        description: 'Manager',
+        permissions: [
+          'dashboard:view', 'pos:view', 'sale:read', 'sale:create', 'sale:update', 'sale:delete',
+          'expense:read', 'expense:create', 'expense:update', 'expense:delete',
+          'product:read', 'product:create', 'product:update', 'product:delete',
+          'patient:read', 'patient:create', 'patient:update', 'patient:delete',
+          'user:read', 'user:create', 'user:update', 'user:delete',
+          'role:read', 'role:create', 'role:update', 'role:delete',
+          'account:read', 'account:manage', 'report:read', 'salesAgent:read', 'salesAgent:create',
+          'expenseCategory:read', 'expenseCategory:create',
+          'auditLog:read', 'auditLog:create',
+          'settings:read', 'settings:create',
+          'backup:read', 'backup:restore',
+          'lang:read'
+        ]
+      },
+      {
+        name: 'accounts',
+        description: 'Accounts Department',
+        permissions: [
+          'account:manage', 'account:read', 'report:read', 'expense:read', 'sale:read',
+          'product:read', 'patient:read', 'user:read', 'salesAgent:read', 'expenseCategory:read'
+        ]
+      }
+    ];
+    for (const roleData of rolesToCreate) {
+      let role = await Role.findOne({ where: { name: roleData.name } });
+      if (!role) {
+        role = await Role.create(roleData);
+        console.log(`Default role created: ${roleData.name}`);
+      }
+    }
+
     // Initialize default settings
     const defaultSettings = [
       {

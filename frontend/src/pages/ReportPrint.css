@@ -1,0 +1,81 @@
+/* ReportPrint.css - Bootstrap-based, modern, clean print styles */
+
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm 12mm 18mm 12mm;
+  }
+  body {
+    background: #fff !important;
+    color: #222 !important;
+    font-family: 'Segoe UI', Arial, Helvetica, sans-serif !important;
+    font-size: 12px !important;
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  .container-fluid {
+    padding: 0 !important;
+  }
+  .report-table-container {
+    margin-bottom: 24px !important;
+    page-break-inside: auto !important;
+  }
+  .report-print-main {
+    display: block !important;
+    min-height: unset !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    background: #fff !important;
+    font-size: 11px !important;
+  }
+  th, td {
+    border: 1px solid #dee2e6 !important;
+    padding: 8px 6px !important;
+    text-align: left !important;
+  }
+  th {
+    background: #f8f9fa !important;
+    color: #222 !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+  }
+  .report-totals td {
+    font-weight: 700 !important;
+    background: #e9ecef !important;
+    color: #222 !important;
+  }
+  .border-top {
+    border-top: 1px solid #dee2e6 !important;
+  }
+  .print-page-number:after {
+    content: "Page " counter(page) " of " counter(pages) !important;
+  }
+  .d-print-none, .no-print, .btn, button {
+    display: none !important;
+  }
+  /* Remove box shadows and extra borders for print */
+  .shadow, .shadow-sm, .shadow-lg, .border, .border-0 {
+    box-shadow: none !important;
+    border: none !important;
+  }
+  /* Remove background for print clarity */
+  .bg-body, .bg-light, .bg-white {
+    background: #fff !important;
+  }
+}
+
+.report-section.print-mode {
+  background: #fff !important;
+  color: #222 !important;
+  box-shadow: none !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+} 

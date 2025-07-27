@@ -20,14 +20,12 @@ import {
   GeoAlt,
   X
 } from 'react-bootstrap-icons'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/AuthHelpers'
 import { useCurrency } from '../hooks/useCurrency'
-import { useNavigate } from 'react-router-dom'
-import InvoicePage from './Invoice'
-import { createRoot } from 'react-dom/client'
-import React from 'react'
-import { AuthProvider } from '../context/AuthContext'
+import React, { Suspense } from 'react'
 import Modal from '../components/Modal.jsx'
+import Toast from '../components/Toast';
+import InvoicePage from './Invoice';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
 
@@ -81,8 +79,6 @@ const PatientSelector = ({
   // Keyboard navigation
   const handleKeyDown = useCallback((e) => {
     if (!dropdownOpen) return
-    
-    const totalItems = filteredPatients.length + 1
     
     switch (e.key) {
       case 'ArrowDown':
@@ -747,10 +743,10 @@ function POS() {
   const [savingAgent, setSavingAgent] = useState(false)
   const [discount, setDiscount] = useState('')
   const [discountType, setDiscountType] = useState('fixed')
-  const [copiesToPrint, setCopiesToPrint] = useState(1)
-  const [branding, setBranding] = useState({ hospitalName: 'Hospital Accounts Management' })
+  const [copiesToPrint, setCopiesToPrint] = useState(2)
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const [invoiceSaleId, setInvoiceSaleId] = useState(null)
+  const [toast, setToast] = useState({ message: '', type: 'error' });
 
   // Custom hooks
   const { cart, addToCart, updateQuantity, removeFromCart, clearCart } = useCart(products)
@@ -762,7 +758,7 @@ function POS() {
     setDiscount('')
     setDiscountType('percent')
     setSelectedPatient(null)
-    setSelectedAgent(null)
+    setSelectedAgent('')
     setCopiesToPrint(1)
     setShowClearCartModal(false)
   }, [clearCart])
@@ -771,7 +767,6 @@ function POS() {
   const { t } = useTranslations()
   const { user } = useAuth()
   const { formatCurrency } = useCurrency()
-  const navigate = useNavigate()
 
   // Data fetching
   useEffect(() => {
@@ -799,7 +794,7 @@ function POS() {
         if (settingsRes.status === 'fulfilled') {
           const brandingSetting = settingsRes.value.data.find(s => s.key === 'branding')
           if (brandingSetting?.value?.hospitalName) {
-            setBranding(brandingSetting.value)
+            // setBranding(brandingSetting.value) // This line was removed
           }
         }
       } catch (err) {
@@ -846,7 +841,7 @@ function POS() {
       setPatientForm({ name: '', age: '', gender: '', phone: '', email: '', address: '', isActive: true })
     } catch (err) {
       console.error('Failed to save patient:', err)
-      alert(t('patientSaveFailed') || 'Failed to save patient')
+      setToast({ message: t('patientSaveFailed') || 'Failed to save patient', type: 'error' });
     } finally {
       setSavingPatient(false)
     }
@@ -871,7 +866,7 @@ function POS() {
       setAgentForm({ name: '', phone: '', email: '', isActive: true })
     } catch (err) {
       console.error('Failed to save agent:', err)
-      alert(t('agentSaveFailed') || 'Failed to save agent')
+      setToast({ message: t('agentSaveFailed') || 'Failed to save agent', type: 'error' });
     } finally {
       setSavingAgent(false)
     }
@@ -911,7 +906,20 @@ function POS() {
         import('react-dom/client').then(ReactDOM => {
           import('./Invoice').then(({ default: InvoicePage }) => {
             const root = ReactDOM.createRoot(popup.document.getElementById('invoice-root'));
-            root.render(<InvoicePage saleId={response.data.id} />);
+            // Render the invoice N times, each wrapped in a div with a page break
+            root.render(
+              React.createElement(
+                React.Fragment,
+                null,
+                Array.from({ length: copiesToPrint }).map((_, i) =>
+                  React.createElement(
+                    'div',
+                    { key: i, style: { pageBreakAfter: 'always' } },
+                    React.createElement(InvoicePage, { saleId: response.data.id })
+                  )
+                )
+              )
+            );
             // Wait for content, then print
             const observer = new popup.MutationObserver(() => {
               observer.disconnect();
@@ -928,38 +936,7 @@ function POS() {
       doClearCart();
     } catch (error) {
       console.error('Sale failed:', error)
-      alert(t('saleFailed') || 'Failed to complete sale. Please try again.')
-    }
-  }
-
-  // Print Invoice (creates sale, clears cart, resets POS)
-  const handlePrintInvoice = async () => {
-    if (cart.length === 0 || !selectedPatient) return
-
-    try {
-      const saleData = {
-        patientId: selectedPatient,
-        salesAgentId: selectedAgent || null,
-        cashierId: user.id,
-        items: cart
-          .filter(item => !item.isSupplementary && !item.supplementaryParentId)
-          .map(item => ({
-            productId: item.id,
-            quantity: item.quantity,
-            price: item.price,
-            supplementaryIds: item.supplementaryIds || []
-          })),
-        discount: parseFloat(discount) || 0,
-        discountType: discountType
-      }
-
-      const response = await axios.post(`${API_BASE}/api/sales`, saleData)
-      // Print logic (open popup, etc) would go here if needed
-      openInvoiceModal({ saleId: response.data.id })
-      doClearCart()
-    } catch (error) {
-      console.error('Invoice generation failed:', error)
-      alert(t('invoiceFailed') || 'Failed to generate invoice. Please try again.')
+      setToast({ message: t('saleFailed') || 'Failed to complete sale. Please try again.', type: 'error' });
     }
   }
 
@@ -987,7 +964,7 @@ function POS() {
       // Do NOT clear cart or reset POS
     } catch (error) {
       console.error('Invoice preview failed:', error)
-      alert(t('invoiceFailed') || 'Failed to preview invoice. Please try again.')
+      setToast({ message: t('invoiceFailed') || 'Failed to preview invoice. Please try again.', type: 'error' });
     }
   }
 
@@ -1010,6 +987,9 @@ function POS() {
 
   return (
     <div className="container-fluid">
+      {toast.message && (
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast({ message: '', type: 'error' })} />
+      )}
       <div className="row g-4">
                  {/* Left Column - Patient, Agent, Products */}
          <div className="col-lg-6">
@@ -1381,7 +1361,11 @@ function POS() {
         size="xl"
         footer={<button className="btn btn-secondary" onClick={() => setShowInvoiceModal(false)}>{t('close') || 'Close'}</button>}
       >
-        {invoiceSaleId && <InvoicePage saleId={invoiceSaleId} />}
+        {invoiceSaleId && (
+          <Suspense fallback={<div className="d-flex justify-content-center align-items-center py-5"><div className="spinner-border" /></div>}>
+            <InvoicePage saleId={invoiceSaleId} />
+          </Suspense>
+        )}
       </Modal>
 
       {/* Clear Cart Confirmation Modal */}

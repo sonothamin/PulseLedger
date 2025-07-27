@@ -55,13 +55,11 @@ export async function loadLanguage(languageCode) {
     return translations
   } catch (error) {
     console.error(`Failed to load language file for ${languageCode}:`, error)
-    
     // Fallback to English if the requested language fails to load
     if (languageCode !== 'en') {
       console.log('Falling back to English...')
       return loadLanguage('en')
     }
-    
     // If even English fails, return empty object
     return {}
   }

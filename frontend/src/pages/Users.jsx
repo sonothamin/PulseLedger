@@ -3,11 +3,14 @@ import axios from 'axios'
 import { Plus, Search, ThreeDots, Pencil, Trash, Eye, Person, Envelope, Shield, Key } from 'react-bootstrap-icons'
 import { useTranslations } from '../hooks/useTranslations'
 import useUsers from '../hooks/useUsers'
+import { useAuth } from '../context/AuthHelpers'
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 function Users() {
-  const { users, loading } = useUsers()
+  const { t } = useTranslations();
+  const { user, hasAnyPermission } = useAuth();
+  const { users, loading } = useUsers();
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({ username: '', password: '', name: '', email: '', roleId: '', isActive: true })
@@ -16,9 +19,37 @@ function Users() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRole, setSelectedRole] = useState('')
   const [roles, setRoles] = useState([])
-  const { t } = useTranslations()
   const [showViewModal, setShowViewModal] = useState(false)
   const [viewUser, setViewUser] = useState(null)
+
+  useEffect(() => {
+    if (user) fetchRoles();
+  }, [user]);
+
+  useEffect(() => {
+    if (!showModal && !showViewModal) return;
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        if (showModal) closeModal();
+        if (showViewModal) setShowViewModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [showModal, showViewModal]);
+
+  // Block screen for lack of user:list
+  if (!hasAnyPermission(['user:list'])) {
+    return (
+      <div className="d-flex justify-content-center align-items-center py-5">
+        <div className="text-center">
+          <Shield className="text-muted mb-3" size={48} />
+          <h4>Access Denied</h4>
+          <p className="text-muted">You don't have permission to view users.</p>
+        </div>
+      </div>
+    );
+  }
 
   const fetchRoles = async () => {
     try {
@@ -28,10 +59,6 @@ function Users() {
       console.error('Failed to fetch roles:', err)
     }
   }
-
-  useEffect(() => {
-    fetchRoles()
-  }, [])
 
   const openModal = (user = null) => {
     setEditing(user)
@@ -91,7 +118,7 @@ function Users() {
     try {
       await axios.delete(`${API_BASE}/api/users/${id}`)
       setToast(t('userDeleted'))
-    } catch (err) {
+    } catch {
       setToast(t('failedToSaveUser'))
     }
   }
@@ -103,19 +130,6 @@ function Users() {
     const matchesRole = !selectedRole || user.Role?.name === selectedRole
     return matchesSearch && matchesRole
   })
-
-  // Add Escape key support for modals
-  useEffect(() => {
-    if (!showModal && !showViewModal) return;
-    const handleEsc = (e) => {
-      if (e.key === 'Escape') {
-        if (showModal) closeModal();
-        if (showViewModal) setShowViewModal(false);
-      }
-    };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [showModal, showViewModal]);
 
   if (loading) {
     return (

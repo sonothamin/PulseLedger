@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { Search, Filter, Calendar, Person, Activity, Eye, Download, ArrowClockwise, Clock, PersonCircle, FileText, ArrowUp, ArrowDown, Trash } from 'react-bootstrap-icons'
 import { useTranslations } from '../hooks/useTranslations'
@@ -32,10 +32,11 @@ function AuditLogs() {
   })
   const [selectedLog, setSelectedLog] = useState(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
-  const { t } = useTranslations()
   const [toast, setToast] = useState('')
 
-  const fetchLogs = async (page = 1) => {
+  const { t } = useTranslations();
+
+  const fetchLogs = useCallback(async (page = 1) => {
     setLoading(true)
     setError('')
     try {
@@ -48,7 +49,10 @@ function AuditLogs() {
       })
       
       const res = await axios.get(`/api/audit-logs?${params}`)
-      let logs = res.data.logs
+      let logs = Array.isArray(res.data.logs) ? res.data.logs : [];
+      if (!Array.isArray(res.data.logs)) {
+        console.warn('[AuditLogs] API returned logs as', res.data.logs, 'defaulting to empty array.');
+      }
       
       // Apply frontend search filter for details since backend JSON search is limited
       if (filters.search) {
@@ -74,14 +78,19 @@ function AuditLogs() {
       }
       
       setLogs(logs)
-      setPagination(res.data.pagination)
+      if (res.data && res.data.pagination && typeof res.data.pagination.limit !== 'undefined') {
+        setPagination(res.data.pagination)
+      } else {
+        setPagination({ page: 1, limit: 50, total: 0, pages: 0 })
+        setError('Malformed pagination data from server.')
+      }
     } catch (err) {
       setError('Failed to load audit logs')
       console.error('Error fetching logs:', err)
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters, pagination.limit, sorting.direction, sorting.field]);
 
   const fetchFilterOptions = async () => {
     try {
@@ -98,11 +107,11 @@ function AuditLogs() {
   useEffect(() => {
     fetchLogs()
     fetchFilterOptions()
-  }, [])
+  }, [fetchLogs])
 
   useEffect(() => {
     fetchLogs(1)
-  }, [filters, sorting])
+  }, [filters, sorting, fetchLogs])
 
   const handleFilterChange = (name, value) => {
     setFilters(prev => ({ ...prev, [name]: value }))
@@ -200,7 +209,12 @@ function AuditLogs() {
     }
   }
 
-  if (loading && logs.length === 0) {
+  // Defensive: ensure logs is always an array
+  const safeLogs = Array.isArray(logs) ? logs : (console.warn('[AuditLogs] logs is not an array:', logs), []);
+  // Defensive: ensure pagination is an object with required fields
+  const safePagination = pagination && typeof pagination === 'object' && typeof pagination.page !== 'undefined' && typeof pagination.limit !== 'undefined' && typeof pagination.total !== 'undefined' ? pagination : { page: 1, limit: 50, total: 0, pages: 0 };
+
+  if (loading && safeLogs.length === 0) {
     return (
       <div className="d-flex justify-content-center align-items-center py-5">
         <div className="spinner-border" />
@@ -342,10 +356,10 @@ function AuditLogs() {
             </div>
           )}
           
-          {logs.length === 0 ? (
+          {safeLogs.length === 0 ? (
             <div className="text-center py-5">
               <FileText size={48} className="text-muted mb-3" />
-              <p className="text-muted">No audit logs found</p>
+              <p className="text-muted">{t('noAuditLogsFound')}</p>
             </div>
           ) : (
             <div className="table-responsive">
@@ -397,7 +411,7 @@ function AuditLogs() {
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.map((log) => (
+                  {safeLogs.map((log) => (
                     <tr key={log.id}>
                       <td>
                         <span className={`badge bg-${getActionColor(log.action)}`}>
@@ -464,23 +478,23 @@ function AuditLogs() {
           )}
 
           {/* Pagination */}
-          {pagination.pages > 1 && (
+          {safePagination.pages > 1 && (
             <nav aria-label="Audit logs pagination" className="mt-4">
               <ul className="pagination justify-content-center">
-                <li className={`page-item ${pagination.page === 1 ? 'disabled' : ''}`}>
+                <li className={`page-item ${safePagination.page === 1 ? 'disabled' : ''}`}>
                   <button 
                     className="page-link" 
-                    onClick={() => handlePageChange(pagination.page - 1)}
-                    disabled={pagination.page === 1}
+                    onClick={() => handlePageChange(safePagination.page - 1)}
+                    disabled={safePagination.page === 1}
                   >
                     Previous
                   </button>
                 </li>
                 
-                {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                  const page = Math.max(1, Math.min(pagination.pages - 4, pagination.page - 2)) + i
+                {Array.from({ length: Math.min(5, safePagination.pages) }, (_, i) => {
+                  const page = Math.max(1, Math.min(safePagination.pages - 4, safePagination.page - 2)) + i
                   return (
-                    <li key={page} className={`page-item ${page === pagination.page ? 'active' : ''}`}>
+                    <li key={page} className={`page-item ${page === safePagination.page ? 'active' : ''}`}>
                       <button 
                         className="page-link" 
                         onClick={() => handlePageChange(page)}
@@ -491,11 +505,11 @@ function AuditLogs() {
                   )
                 })}
                 
-                <li className={`page-item ${pagination.page === pagination.pages ? 'disabled' : ''}`}>
+                <li className={`page-item ${safePagination.page === safePagination.pages ? 'disabled' : ''}`}>
                   <button 
                     className="page-link" 
-                    onClick={() => handlePageChange(pagination.page + 1)}
-                    disabled={pagination.page === pagination.pages}
+                    onClick={() => handlePageChange(safePagination.page + 1)}
+                    disabled={safePagination.page === safePagination.pages}
                   >
                     Next
                   </button>
@@ -506,7 +520,15 @@ function AuditLogs() {
 
           {/* Results summary */}
           <div className="text-center text-muted small mt-3">
-            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} audit logs
+            {safePagination && typeof safePagination.limit !== 'undefined' && typeof safePagination.page !== 'undefined' && typeof safePagination.total !== 'undefined' ? (
+              t('showingAuditLogs', {
+                from: ((safePagination.page - 1) * safePagination.limit) + 1,
+                to: Math.min(safePagination.page * safePagination.limit, safePagination.total),
+                total: safePagination.total
+              })
+            ) : (
+              'Pagination info unavailable.'
+            )}
           </div>
         </div>
       </div>

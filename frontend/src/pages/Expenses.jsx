@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import axios from 'axios'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/AuthHelpers'
 import { useCurrency } from '../hooks/useCurrency'
-import useUsers from '../hooks/useUsers'
+import useBranding from '../hooks/useBranding';
 
 import { 
   Plus, 
@@ -26,6 +26,15 @@ import ExpenseForm from '../components/UI/ExpenseForm'
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
+function formatDateDMY(dateString) {
+  if (!dateString) return '';
+  const d = new Date(dateString);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
+}
+
 function Expenses() {
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -46,7 +55,7 @@ function Expenses() {
   const [sortBy, setSortBy] = useState('id')
   const [sortDir, setSortDir] = useState('desc')
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
-  const [dateRange, setDateRange] = useState('')
+  const [dateRange, setDateRange] = useState('today')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [selectedRecipient, setSelectedRecipient] = useState('')
@@ -54,7 +63,7 @@ function Expenses() {
   const [showVoucher, setShowVoucher] = useState(false)
   const [voucherExpenseId, setVoucherExpenseId] = useState(null)
   const [printAfterSave, setPrintAfterSave] = useState(false)
-  const { users: allUsers } = useUsers()
+  const { branding } = useBranding();
 
   const fetchExpenses = async () => {
     setLoading(true)
@@ -62,7 +71,7 @@ function Expenses() {
     try {
       const res = await axios.get(`${API_BASE}/api/expenses`)
       setExpenses(res.data)
-    } catch (err) {
+    } catch {
       setError('Failed to load expenses')
     } finally {
       setLoading(false)
@@ -73,10 +82,17 @@ function Expenses() {
     try {
       const res = await axios.get(`${API_BASE}/api/expense-categories`)
       setCategories(res.data)
-    } catch (err) {}
+    } catch {
+      // ignore
+    }
   }
 
-  useEffect(() => { fetchExpenses(); fetchCategories() }, [])
+  useEffect(() => {
+    if (user) {
+      fetchExpenses();
+      fetchCategories();
+    }
+  }, [user]);
 
   const handlePrintVoucher = (expenseId) => {
     setVoucherExpenseId(expenseId)
@@ -84,28 +100,64 @@ function Expenses() {
   }
 
   const handlePrintVoucherPopup = async (expenseId) => {
+    if (!branding || !branding.hospitalName) {
+      alert('Branding info is still loading. Please try again in a moment.');
+      return;
+    }
+    const [expenseRes, catRes] = await Promise.all([
+      axios.get(`${API_BASE}/api/expenses/${expenseId}`),
+      axios.get(`${API_BASE}/api/expense-categories`)
+    ]);
+    const expense = expenseRes.data;
+    const categories = catRes.data;
+    const category = categories.find(c => c.id === expense.categoryId);
+    const cashier = expense.Creator || expense.cashier || null;
+    const currentDate = expense.createdAt ? new Date(expense.createdAt).toLocaleString() : new Date().toLocaleString();
+    const voucherNumber = expense.id || 'Draft';
+    const logoSrc = branding.logo?.startsWith('/uploads/')
+      ? API_BASE + branding.logo
+      : branding.logo;
+
+    if (!expense || !category || !branding || !formatCurrency || !cashier || !currentDate || !voucherNumber || !logoSrc) {
+      alert('Some required data is missing for the voucher. Please try again.');
+      return;
+    }
+
     const popup = window.open('', '_blank', 'width=900,height=1200');
     if (!popup) return;
     popup.document.write('<html><head><title>Expense Voucher</title>');
+    popup.document.write('<link rel="preload" href="/HindSiliguri-Regular.ttf" as="font" type="font/ttf" crossorigin="anonymous">');
+    popup.document.write('<link rel="stylesheet" href="/index.css" />');
     popup.document.write('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />');
     popup.document.write('</head><body><div id="voucher-root"></div></body></html>');
     popup.document.close();
-    // Wait for popup DOM to be ready
     popup.onload = () => {
       import('react-dom/client').then(ReactDOM => {
-        const root = ReactDOM.createRoot(popup.document.getElementById('voucher-root'));
-        root.render(
-          <ExpenseVoucher expenseId={expenseId} />
-        );
-        // Use MutationObserver to wait for content
-        const observer = new popup.MutationObserver(() => {
-          observer.disconnect();
-          setTimeout(() => {
-            popup.focus();
-            popup.print();
-          }, 1200);
-        });
-        observer.observe(popup.document.getElementById('voucher-root'), { childList: true, subtree: true });
+        try {
+          const root = ReactDOM.createRoot(popup.document.getElementById('voucher-root'));
+          root.render(
+            React.createElement(ExpenseVoucher, {
+              expense,
+              category,
+              branding,
+              formatCurrency,
+              cashier,
+              currentDate,
+              voucherNumber,
+              logoSrc
+            })
+          );
+          const observer = new popup.MutationObserver(() => {
+            observer.disconnect();
+            setTimeout(() => {
+              popup.focus();
+              popup.print();
+            }, 1200);
+          });
+          observer.observe(popup.document.getElementById('voucher-root'), { childList: true, subtree: true });
+        } catch (err) {
+          popup.document.body.innerHTML = '<pre style="color:red;">' + err.stack + '</pre>';
+        }
       });
     };
   };
@@ -131,7 +183,7 @@ function Expenses() {
       setShowAddCategory(false)
       fetchExpenses()
       if (printAfterSave && savedExpenseId) {
-        setTimeout(() => handlePrintVoucher(savedExpenseId), 300)
+        setTimeout(() => handlePrintVoucherPopup(savedExpenseId), 300)
       }
     } catch {
       setToast('Failed to save expense')
@@ -147,8 +199,8 @@ function Expenses() {
       await axios.delete(`${API_BASE}/api/expenses/${id}`)
       setToast('Expense deleted')
       fetchExpenses()
-    } catch (err) {
-      setToast('Failed to delete expense')
+    } catch {
+      // ignore
     }
   }
 
@@ -198,9 +250,14 @@ function Expenses() {
     return matches
   })
 
+  // Filtered stats
+  const filteredTotal = filteredExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
+  const filteredCount = filteredExpenses.length;
+  const filteredAvg = filteredCount > 0 ? filteredTotal / filteredCount : 0;
+
   // When dateRange changes, update start/end unless custom
   useEffect(() => {
-    if (dateRange && dateRange !== 'custom') {
+    if (dateRange && dateRange !== 'custom' && dateRange !== 'all') {
       const now = new Date()
       const today = now.toISOString().split('T')[0]
       let s = '', e = ''
@@ -225,6 +282,9 @@ function Expenses() {
       }
       setStartDate(s)
       setEndDate(e)
+    } else if (dateRange === 'all' || dateRange === '') {
+      setStartDate('');
+      setEndDate('');
     }
   }, [dateRange])
 
@@ -276,6 +336,29 @@ function Expenses() {
     }
   }, [editing])
 
+  // Helper to get all voucher props for a given expenseId
+  const getVoucherProps = (expenseId) => {
+    const expense = expenses.find(e => e.id === expenseId);
+    if (!expense) return {};
+    const category = categories.find(c => c.id === expense.categoryId);
+    const cashier = expense.Creator || expense.cashier || null;
+    const currentDate = expense.createdAt ? new Date(expense.createdAt).toLocaleString() : new Date().toLocaleString();
+    const voucherNumber = expense.id || 'Draft';
+    const logoSrc = branding.logo?.startsWith('/uploads/')
+      ? API_BASE + branding.logo
+      : branding.logo;
+    return {
+      expense,
+      category,
+      branding,
+      formatCurrency,
+      cashier,
+      currentDate,
+      voucherNumber,
+      logoSrc
+    };
+  };
+
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center py-5">
@@ -320,15 +403,31 @@ function Expenses() {
               style={{ minWidth: 0 }}
             />
           </div>
-          <button
-            className="btn btn-primary btn-sm d-flex align-items-center gap-2"
-            type="button"
-            onClick={() => setShowAdvancedFilters(f => !f)}
-            aria-expanded={showAdvancedFilters}
-            aria-controls="expenses-advanced-filters"
-          >
-            <Filter /> {t('filter')}
-          </button>
+          <span className="badge bg-primary text-light fs-6 ms-2">{t('total')}: {formatCurrency(filteredTotal)}</span>
+          <span className="badge bg-secondary text-light fs-6 ms-1">{t('count')}: {filteredCount}</span>
+          <div className="ms-auto d-flex align-items-center gap-2">
+          <span className="text-muted small ms-2">
+              {t('showing') || 'Showing'}: {(() => {
+                switch (dateRange) {
+                  case 'today': return t('accountsToday') || 'Today';
+                  case 'this-week': return t('accountsThisWeek') || 'This Week';
+                  case 'this-month': return t('accountsThisMonth') || 'This Month';
+                  case 'all': return t('allDates') || 'All Dates';
+                  case 'custom': return `${formatDateDMY(startDate)} - ${formatDateDMY(endDate)}`;
+                  default: return dateRange;
+                }
+              })()}
+            </span>
+            <button
+              className="btn btn-primary btn-sm d-flex align-items-center gap-2"
+              type="button"
+              onClick={() => setShowAdvancedFilters(f => !f)}
+              aria-expanded={showAdvancedFilters}
+              aria-controls="expenses-advanced-filters"
+            >
+              <Filter /> {t('filter')}
+            </button>
+          </div>
         </div>
         <div className={`collapse${showAdvancedFilters ? ' show' : ''}`} id="expenses-advanced-filters">
           <div className="card-body pt-3 pb-2 bg-body-tertiary border-top rounded-bottom-3">
@@ -338,8 +437,15 @@ function Expenses() {
                 <label className="form-label mb-1">{t('expenseDate')}</label>
                 <div className="input-group input-group-sm flex-nowrap">
                   <span className="input-group-text bg-transparent border-end-0"><Calendar size={18} /></span>
-                  <select className="form-select form-select-sm border-start-0" value={dateRange} onChange={e => setDateRange(e.target.value)}>
-                    <option value="">{t('allDates') || 'All Dates'}</option>
+                  <select className="form-select form-select-sm border-start-0" value={dateRange} onChange={e => {
+                    const val = e.target.value;
+                    setDateRange(val);
+                    if (val === 'all' || val === '') {
+                      setStartDate('');
+                      setEndDate('');
+                    }
+                  }}>
+                    <option value="all">{t('allDates') || 'All Dates'}</option>
                     <option value="this-week">{t('accountsThisWeek') || 'This Week'}</option>
                     <option value="this-month">{t('accountsThisMonth') || 'This Month'}</option>
                     <option value="7">{t('accountsLast7Days') || 'Last 7 Days'}</option>
@@ -435,7 +541,7 @@ function Expenses() {
                         </div>
                       </td>
                       <td>{expense.description && expense.description.length > 32 ? expense.description.slice(0, 32) + '…' : expense.description}</td>
-                      <td>{allUsers.find(u => u.id === expense.createdBy)?.name || '-'}</td>
+                      <td>{expense.createdBy === user?.id ? user?.name : '-'}</td>
                       <td className="text-center">
                         <div className="d-flex align-items-center justify-content-center gap-1">
                           <Calendar className="text-muted" />
@@ -489,51 +595,6 @@ function Expenses() {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="row g-4 mt-4">
-        <div className="col-md-3">
-          <div className="card border-0 shadow-sm">
-            <div className="card-body text-center">
-              <h4 className="text-primary mb-1">{sortedExpenses.length}</h4>
-              <p className="text-muted mb-0">{t('totalExpenses')}</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card border-0 shadow-sm">
-            <div className="card-body text-center">
-              <h4 className="text-danger mb-1">
-                {formatCurrency(sortedExpenses.reduce((sum, expense) => sum + expense.amount, 0))}
-              </h4>
-              <p className="text-muted mb-0">{t('totalAmount')}</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card border-0 shadow-sm">
-            <div className="card-body text-center">
-              <h4 className="text-info mb-1">
-                {new Set(sortedExpenses.map(e => e.categoryId)).size}
-              </h4>
-              <p className="text-muted mb-0">{t('categoriesUsed')}</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card border-0 shadow-sm">
-            <div className="card-body text-center">
-              <h4 className="text-warning mb-1">
-                {sortedExpenses.length > 0 ? 
-                  formatCurrency(sortedExpenses.reduce((sum, expense) => sum + expense.amount, 0) / sortedExpenses.length) : 
-                  formatCurrency(0)
-                }
-              </h4>
-              <p className="text-muted mb-0">{t('averageAmount')}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Modal */}
       <Modal
         show={showModal}
@@ -571,7 +632,9 @@ function Expenses() {
                 setForm(f => ({ ...f, categoryId: res.data.id }))
                 setNewCategory('')
                 setShowAddCategory(false)
-              } catch {}
+              } catch {
+                // ignore
+              }
             }
           }}
           t={t}
@@ -593,7 +656,7 @@ function Expenses() {
         className="p-0"
       >
         <div className="p-0">
-          <ExpenseVoucher expenseId={voucherExpenseId} />
+          <ExpenseVoucher {...getVoucherProps(voucherExpenseId)} />
         </div>
       </Modal>
       {/* Toast */}

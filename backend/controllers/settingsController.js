@@ -84,6 +84,19 @@ const uploadLogo = async (req, res) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
+    // Delete old logo if provided and safe
+    const oldLogo = req.body.oldLogo;
+    if (oldLogo && typeof oldLogo === 'string' && oldLogo.startsWith('/uploads/')) {
+      const oldLogoPath = path.join(__dirname, '..', oldLogo);
+      if (fs.existsSync(oldLogoPath)) {
+        try {
+          fs.unlinkSync(oldLogoPath);
+        } catch (err) {
+          console.error('Failed to delete old logo:', oldLogoPath, err);
+        }
+      }
+    }
+
     const logoUrl = `/uploads/${req.file.filename}`;
     res.json({ logoUrl });
   } catch (error) {

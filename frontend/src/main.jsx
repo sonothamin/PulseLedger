@@ -8,6 +8,7 @@ import './index.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { AuthProvider } from './context/AuthContext'
+import Toast from './components/Toast';
 
 // Configure axios to send cookies with requests
 axios.defaults.withCredentials = true
@@ -45,6 +46,19 @@ function onRefreshed() {
   refreshSubscribers = [];
 }
 
+let globalError = '';
+let globalNavigate = null;
+function showGlobalError(msg, navigateTo) {
+  globalError = msg;
+  const event = new CustomEvent('show-toast');
+  window.dispatchEvent(event);
+  if (navigateTo && globalNavigate) {
+    setTimeout(() => {
+      globalNavigate(navigateTo);
+    }, 3000); // Show toast for 3s before navigating
+  }
+}
+
 axios.interceptors.response.use(
   response => response,
   async error => {
@@ -68,7 +82,7 @@ axios.interceptors.response.use(
         window.hasRefreshFailed = true;
         if (!isHandlingAuthError) {
           isHandlingAuthError = true;
-          window.location.href = '/login';
+          // window.location.href = '/login'; // REMOVED
         }
         return Promise.reject(error);
       }
@@ -101,11 +115,10 @@ axios.interceptors.response.use(
         onRefreshed();
         if (!isHandlingAuthError) {
           isHandlingAuthError = true;
-          // Don't show alert for logout scenarios
           if (originalRequest.url !== `${API_BASE}/api/auth/me`) {
-            alert('Your session has expired. Please log in again.');
+            showGlobalError('Your session has expired. Please log in again.', '/login');
           }
-          window.location.href = '/login';
+
         }
         return Promise.reject(refreshError);
       }
@@ -115,18 +128,42 @@ axios.interceptors.response.use(
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       if (!isHandlingAuthError && originalRequest.url !== `${API_BASE}/api/auth/me`) {
         isHandlingAuthError = true;
-        alert('Your session has expired. Please log in again.');
-        window.location.href = '/login';
+        showGlobalError('Your session has expired. Please log in again.', '/login');
+        // window.location.href = '/login'; // REMOVED
       }
     }
     return Promise.reject(error);
   }
 );
 
+function GlobalToast() {
+  const [msg, setMsg] = React.useState('');
+  React.useEffect(() => {
+    function handler() {
+      setMsg(globalError);
+      setTimeout(() => setMsg(''), 3500);
+    }
+    window.addEventListener('show-toast', handler);
+    return () => window.removeEventListener('show-toast', handler);
+  }, []);
+  if (!msg) return null;
+  return <Toast message={msg} type="error" onClose={() => setMsg('')} />;
+}
+
+function GlobalNavigateSetter({ navigate }) {
+  React.useEffect(() => {
+    globalNavigate = navigate;
+    return () => { if (globalNavigate === navigate) globalNavigate = null; };
+  }, [navigate]);
+  return null;
+}
+
+export { GlobalNavigateSetter };
+
 createRoot(rootEl).render(
-  <StrictMode>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
-  </StrictMode>,
+  <AuthProvider>
+    <GlobalToast />
+    <GlobalNavigateSetter />
+    <App />
+  </AuthProvider>
 )
